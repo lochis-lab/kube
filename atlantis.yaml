@@ -1,0 +1,29 @@
+# Activated in phase 2 — Atlantis not yet deployed.
+repos:
+  - id: github.com/lochis-lab/kube
+    allowed_overrides: [workflow]
+    allow_custom_workflows: true
+projects:
+  - name: terraform-infra
+    dir: terraform/infra
+    workflow: terraform
+    autoplan: { when_modified: ["*.tf"] }
+    apply_requirements: [approved]
+  - name: terraform-platform
+    dir: terraform/platform
+    workflow: terraform
+    autoplan: { when_modified: ["*.tf", "../modules/**/*.tf"]}
+    apply_requirements: [approved]
+  - name: apps
+    dir: apps
+    workflow: kubectl
+    autoplan: { when_modified: ["*.yaml"]}
+    apply_requirements: [approved]
+workflows:
+  kubectl:
+    plan:
+      steps:
+        - run: kubectl diff -R -f $DIR || true   # diff is noisy for drift; review PR diff primarily
+    apply:
+      steps:
+        - run: kubectl apply -R -f $DIR
