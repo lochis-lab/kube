@@ -6,7 +6,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | # | App | Objects | Notes | Status |
 |---|---|---|---|---|
 | 0 | audiobookshelf | 8 | pilot; namespace+annotations+Recreate lessons baked in | ✅ |
-| 1 | searxng | deploy+svc+IR | identical manifests on both stash hosts; pin image | ⬜ |
+| 1 | searxng | ns+CM+deploy+svc | ✅ migrated via PR #15 — secrets extracted to atlantis-app-vars, digest-pinned | ✅ |
 | 2 | dealchis | deploy+svc+IR | own image already pinned 0.0.1 | ⬜ |
 | 3 | osu-tracker | deploy+IR+cronjob | include the sync cronjob; LB svc exists | ⬜ |
 
