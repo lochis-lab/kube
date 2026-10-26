@@ -9,16 +9,7 @@ projects:
     dir: terraform/platform
     autoplan: { when_modified: ["**/*.tf"] }
     apply_requirements: [mergeable, undiverged]
-  - name: apps
-    dir: apps
-    workflow: kubectl
-    autoplan: { when_modified: ["**/*.yaml"] }
+  - name: terraform-apps
+    dir: terraform/apps
+    autoplan: { when_modified: ["**/*.tf", "**/*.tftpl"] }
     apply_requirements: [mergeable, undiverged]
-workflows:
-  kubectl:
-    plan:
-      steps:
-        - run: sh ../scripts/kubectl-apps.sh plan $DIR
-    apply:
-      steps:
-        - run: sh ../scripts/kubectl-apps.sh apply $DIR

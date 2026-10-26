@@ -33,6 +33,12 @@ environmentSecrets:
     secretKeyRef: { name: atlantis-app-vars, key: SEARXNG_SECRET }
   - name: WEBSHARE_PROXY_URL
     secretKeyRef: { name: atlantis-app-vars, key: WEBSHARE_PROXY_URL }
+  - name: TF_VAR_nfs_media_server
+    secretKeyRef: { name: atlantis-app-vars, key: NFS_MEDIA_SERVER }
+  - name: TF_VAR_searxng_secret
+    secretKeyRef: { name: atlantis-app-vars, key: SEARXNG_SECRET }
+  - name: TF_VAR_webshare_proxy_url
+    secretKeyRef: { name: atlantis-app-vars, key: WEBSHARE_PROXY_URL }
 
 environment:
   ATLANTIS_LOG_LEVEL: info
