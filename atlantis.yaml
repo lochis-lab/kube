@@ -1,33 +1,31 @@
+version: 3
 # Atlantis repo config. Solo operator: approvals can't come from the PR author,
 # so apply gate = mergeable + undiverged.
-repos:
-  - id: github.com/lochis-lab/kube
-    allowed_overrides: [workflow]
-    allow_custom_workflows: true
 projects:
   - name: terraform-infra
     dir: terraform/infra
-    workflow: terraform
-    autoplan: { when_modified: ["*.tf"] }
+    autoplan: { when_modified: ["**/*.tf"] }
     apply_requirements: [mergeable, undiverged]
   - name: terraform-platform
     dir: terraform/platform
-    workflow: terraform
-    autoplan: { when_modified: ["*.tf"] }
+    autoplan: { when_modified: ["**/*.tf"] }
     apply_requirements: [mergeable, undiverged]
   - name: apps
     dir: apps
     workflow: kubectl
-    autoplan: { when_modified: ["*.yaml"] }
+    autoplan: { when_modified: ["**/*.yaml"] }
     apply_requirements: [mergeable, undiverged]
 workflows:
   kubectl:
     plan:
       steps:
-        # object names only — full diffs would echo rendered internal values into public PR comments
-        - run: sh -c "kubectl apply -R -f $DIR --dry-run=server -o name 2>/dev/null | sed 's/^/would apply: /'"
-        - run: sh -c "grep -R '__[A-Z_]*__' $DIR && { echo 'ERROR: unresolved __PLACEHOLDERS__ — add to atlantis-app-vars secret'; exit 1; } || echo 'placeholders: OK'"
+        # render __PLACEHOLDERS__ from pod env (atlantis-app-vars secret) into a temp copy,
+        # assert none remain, dry-run, and guard that every object validated.
+        # object names only in PR comments — full diffs would echo rendered values publicly.
+        - run: >-
+            sh -c "rm -rf /tmp/r && cp -rL $DIR /tmp/r && find /tmp/r -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g {} + ;grep -Rq '__[A-Z_]*__' /tmp/r && { echo ERROR-unresolved-placeholders ; exit 1 ; } ; kubectl apply -R -f /tmp/r --dry-run=server -o name 2>/dev/null | tee /tmp/a | sed s/^/would-apply:/ ; test $(wc -l < /tmp/a) -eq $(grep -Rh ^kind: /tmp/r | wc -l) || { echo ERROR-object-count-mismatch-one-failed-silently ; exit 1 ; }"
     apply:
       steps:
-        # render __VAR__ placeholders from pod env (atlantis-app-vars secret), then apply
-        - run: sh -c "find $DIR -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/$NFS_MEDIA_SERVER/g {} + && kubectl apply -R -f $DIR"
+        # render then apply the rendered copy
+        - run: >-
+            sh -c "rm -rf /tmp/r && cp -rL $DIR /tmp/r && find /tmp/r -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g {} + ; grep -Rq '__[A-Z_]*__' /tmp/r && { echo ERROR-unresolved-placeholders ; exit 1 ; } ; kubectl apply -R -f /tmp/r"
