@@ -1,4 +1,5 @@
 resource "kubernetes_manifest" "audiobookshelf-deploy" {
+  lifecycle { ignore_changes = [object.spec.template.metadata.creationTimestamp] }
   manifest = yamldecode(templatefile("templates/abs-deploy-audiobookshelf.tftpl", {
     nfs_media_server = var.nfs_media_server
     searxng_secret   = var.searxng_secret
