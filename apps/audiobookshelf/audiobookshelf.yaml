@@ -1,4 +1,4 @@
-# Audiobookshelf — canonical source (this repo). Exported from live 2026-11; clusterIP etc. stripped (immutable/allocated).
+# Audiobookshelf — canonical source (this repo). namespace EXPLICIT; ingress.class/websocket annotations load-bearing.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -9,6 +9,7 @@ metadata:
     io.portainer.kubernetes.application.stack: ''
     io.portainer.kubernetes.application.stackid: '343'
   name: abs-config
+  namespace: audiobookshelf
 spec:
   accessModes:
   - ReadWriteOnce
@@ -29,6 +30,7 @@ metadata:
     io.portainer.kubernetes.application.stack: ''
     io.portainer.kubernetes.application.stackid: '343'
   name: abs-metadata
+  namespace: audiobookshelf
 spec:
   accessModes:
   - ReadWriteOnce
@@ -49,6 +51,7 @@ metadata:
     io.portainer.kubernetes.application.stack: ''
     io.portainer.kubernetes.application.stackid: '116'
   name: audiobookshelf-config
+  namespace: audiobookshelf
 spec:
   accessModes:
   - ReadWriteOnce
@@ -69,6 +72,7 @@ metadata:
     io.portainer.kubernetes.application.stack: ''
     io.portainer.kubernetes.application.stackid: '116'
   name: audiobookshelf-metadata
+  namespace: audiobookshelf
 spec:
   accessModes:
   - ReadWriteOnce
@@ -89,6 +93,7 @@ metadata:
     io.portainer.kubernetes.application.stack: ''
     io.portainer.kubernetes.application.stackid: '343'
   name: audiobookshelf
+  namespace: audiobookshelf
 spec:
   progressDeadlineSeconds: 600
   replicas: 1
@@ -162,6 +167,7 @@ metadata:
     io.portainer.kubernetes.application.stack: ''
     io.portainer.kubernetes.application.stackid: '343'
   name: audiobookshelf
+  namespace: audiobookshelf
 spec:
   ports:
   - name: http
@@ -187,6 +193,10 @@ metadata:
     io.portainer.kubernetes.application.stack: ''
     io.portainer.kubernetes.application.stackid: '343'
   name: audiobookshelf
+  namespace: audiobookshelf
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+    traefik.ingress.kubernetes.io/websocket: 'true'
 spec:
   entryPoints:
   - outbound
@@ -210,6 +220,10 @@ metadata:
     io.portainer.kubernetes.application.stack: ''
     io.portainer.kubernetes.application.stackid: '343'
   name: audiobookshelf-ws
+  namespace: audiobookshelf
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+    traefik.ingress.kubernetes.io/websocket: 'true'
 spec:
   entryPoints:
   - outbound2
