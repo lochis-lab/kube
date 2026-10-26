@@ -10,9 +10,8 @@ GitOps source of truth for the homelab k3s cluster.
 - `docs/` — runbooks (operational access details live off-repo)
 
 ## Migration status
-| App | In repo | Promoted (applied from repo) |
-|---|---|---|
-| audiobookshelf | ✅ | ⬜ pending Atlantis |
+
+See [MIGRATIONS.md](MIGRATIONS.md) for the full prioritized backlog.
 
 ## Rules
 - One app per PR; plan/diff must be clean before deleting legacy sources.
