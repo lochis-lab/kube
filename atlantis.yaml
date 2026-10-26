@@ -1,6 +1,5 @@
 version: 3
-# Atlantis repo config. Solo operator: approvals can't come from the PR author,
-# so apply gate = mergeable + undiverged.
+# apps workflow logic lives in scripts/kubectl-apps.sh (version-controlled, testable).
 projects:
   - name: terraform-infra
     dir: terraform/infra
@@ -19,13 +18,7 @@ workflows:
   kubectl:
     plan:
       steps:
-        # render __PLACEHOLDERS__ from pod env (atlantis-app-vars secret) into a temp copy,
-        # assert none remain, dry-run, and guard that every object validated.
-        # object names only in PR comments — full diffs would echo rendered values publicly.
-        - run: >-
-            sh -c "d=$(mktemp -d) && cp -rL $DIR $d && find $d -name '*.yaml' -exec sed -i -e s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g -e s/__SEARXNG_SECRET__/${SEARXNG_SECRET}/g -e s/__WEBSHARE_PROXY_URL__/${WEBSHARE_PROXY_URL}/g {} + ;grep -Rq __placeholder__ $d ; grep -Rq '__[A-Z_]*__' $d && { echo ERROR-unresolved-placeholders ; exit 1 ; } ; kubectl apply -R -f $d --dry-run=server -o name 2>/dev/null | tee $d/a | sed s/^/would-apply:/ ; test $(wc -l < $d/a) -eq $(grep -Rh ^kind: $d | wc -l) || { echo ERROR-object-count-mismatch-one-failed-silently ; exit 1 ; }"
+        - run: sh ../../scripts/kubectl-apps.sh plan $DIR
     apply:
       steps:
-        # render then apply the rendered copy
-        - run: >-
-            sh -c "d=$(mktemp -d) && cp -rL $DIR $d && find $d -name '*.yaml' -exec sed -i -e s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g -e s/__SEARXNG_SECRET__/${SEARXNG_SECRET}/g -e s/__WEBSHARE_PROXY_URL__/${WEBSHARE_PROXY_URL}/g {} + ; grep -Rq __placeholder__ $d ; grep -Rq '__[A-Z_]*__' $d && { echo ERROR-unresolved-placeholders ; exit 1 ; } ; kubectl apply -R -f $d"
+        - run: sh ../../scripts/kubectl-apps.sh apply $DIR
