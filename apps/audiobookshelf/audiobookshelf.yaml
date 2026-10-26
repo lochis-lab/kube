@@ -148,11 +148,11 @@ spec:
       - name: audiobooks
         nfs:
           path: /srv/audiobooks
-          server: NFS_MEDIA_SERVER  # LAN-internal NFS host; real value injected at apply, never committed
+          server: __NFS_MEDIA_SERVER__
       - name: podcasts
         nfs:
           path: /srv/podcasts
-          server: NFS_MEDIA_SERVER  # LAN-internal NFS host; real value injected at apply, never committed
+          server: __NFS_MEDIA_SERVER__
 ---
 apiVersion: v1
 kind: Service

@@ -1,0 +1,14 @@
+# Atlantis ingress — Traefik IngressRoute (chart supports only standard Ingress; this cluster's convention is IngressRoute).
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: atlantis
+  namespace: ops
+spec:
+  entryPoints: [websecure]
+  routes:
+    - match: Host(`atlantis.vanderloch.com`)
+      kind: Rule
+      services: [{ name: atlantis, namespace: ops, port: 80 }]
+  tls:
+    certResolver: default

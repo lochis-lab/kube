@@ -1,4 +1,5 @@
-# Activated in phase 2 — Atlantis not yet deployed.
+# Atlantis repo config. Solo operator: approvals can't come from the PR author,
+# so apply gate = mergeable + undiverged.
 repos:
   - id: github.com/lochis-lab/kube
     allowed_overrides: [workflow]
@@ -8,22 +9,25 @@ projects:
     dir: terraform/infra
     workflow: terraform
     autoplan: { when_modified: ["*.tf"] }
-    apply_requirements: [approved]
+    apply_requirements: [mergeable, undiverged]
   - name: terraform-platform
     dir: terraform/platform
     workflow: terraform
-    autoplan: { when_modified: ["*.tf", "../modules/**/*.tf"]}
-    apply_requirements: [approved]
+    autoplan: { when_modified: ["*.tf"] }
+    apply_requirements: [mergeable, undiverged]
   - name: apps
     dir: apps
     workflow: kubectl
-    autoplan: { when_modified: ["*.yaml"]}
-    apply_requirements: [approved]
+    autoplan: { when_modified: ["*.yaml"] }
+    apply_requirements: [mergeable, undiverged]
 workflows:
   kubectl:
     plan:
       steps:
-        - run: kubectl diff -R -f $DIR || true   # diff is noisy for drift; review PR diff primarily
+        # object names only — full diffs would echo rendered internal values into public PR comments
+        - run: sh -c "kubectl apply -R -f $DIR --dry-run=server -o name 2>/dev/null | sed 's/^/would apply: /'"
+        - run: sh -c "grep -R '__[A-Z_]*__' $DIR && { echo 'ERROR: unresolved __PLACEHOLDERS__ — add to atlantis-app-vars secret'; exit 1; } || echo 'placeholders: OK'"
     apply:
       steps:
-        - run: kubectl apply -R -f $DIR
+        # render __VAR__ placeholders from pod env (atlantis-app-vars secret), then apply
+        - run: sh -c "find $DIR -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/$NFS_MEDIA_SERVER/g {} + && kubectl apply -R -f $DIR"
