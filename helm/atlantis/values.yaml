@@ -1,0 +1,63 @@
+# Atlantis — official chart, zero owned artifacts:
+# upstream image + runtime terraform download (ATLANTIS_TF_DOWNLOAD) + kubectl via initContainer.
+# Bootstrap: helm upgrade --install atlantis runatlantis/atlantis -n ops -f this-file
+# Later: import as helm_release in terraform/platform (same pattern as traefik/authentik).
+image:
+  repository: ghcr.io/runatlantis/atlantis
+  tag: "v0.48.2"            # pinned; Renovate bumps
+  pullPolicy: IfNotPresent
+
+atlantisUrl: "https://atlantis.vanderloch.com"  # must be reachable from GitHub webhooks (see docs/BOOTSTRAP.md)
+orgAllowlist: "github.com/lochis-lab/kube"
+
+github:
+  user: Lochis
+# credentials live in k8s Secret atlantis-vcs (keys: github_token, github_secret) — never in this repo
+vcsSecretName: atlantis-vcs
+
+# TF state backend RBAC (Secret+Lease in ops ns) — chart-managed
+enableKubernetesBackend: true
+
+# tier-3 internal values injected at apply time (see atlantis.yaml apps workflow)
+environmentSecrets:
+  - name: NFS_MEDIA_SERVER
+    secretKeyRef: { name: atlantis-app-vars, key: NFS_MEDIA_SERVER }
+
+environment:
+  ATLANTIS_LOG_LEVEL: info
+  ATLANTIS_TF_DOWNLOAD: "true"           # chart image ships without terraform
+
+defaultTFDistribution: terraform
+defaultTFVersion: "1.17.0"               # match repo required_version
+
+# kubectl for the apps/ custom workflow — copied from the official image into /tools
+initContainers:
+  - name: kubectl
+    image: docker.io/library/alpine:3.22
+    command: ["/bin/sh", "-c", "wget -qO /tools/kubectl https://dl.k8s.io/release/v1.33.9/bin/linux/amd64/kubectl && chmod +x /tools/kubectl"]  # pin matches cluster server
+    volumeMounts:
+      - { name: kubectl-tools, mountPath: /tools }
+extraVolumes:
+  - name: kubectl-tools
+    emptyDir: {}
+extraVolumeMounts:
+  - { name: kubectl-tools, mountPath: /tools }
+extraPath: "/tools"
+
+volumeClaim:
+  enabled: true
+  dataStorage: 5Gi
+  storageClassName: longhorn
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: false                          # routing via Traefik IngressRoute (see terraform/infra/bootstrap/)
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - { key: kubernetes.io/hostname, operator: In, values: [k3s-worker-01, k3s-worker-02] }
