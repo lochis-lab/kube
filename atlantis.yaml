@@ -20,12 +20,12 @@ workflows:
     plan:
       steps:
         # render __PLACEHOLDERS__ from pod env (atlantis-app-vars secret) into a temp copy,
-        # assert none remain, then dry-run — object names only in PR comments
-        # (full diffs would echo rendered internal values into a public repo)
+        # assert none remain, dry-run, and guard that every object validated.
+        # object names only in PR comments — full diffs would echo rendered values publicly.
         - run: >-
-            sh -c "rm -rf /tmp/r && cp -rL $DIR /tmp/r && find /tmp/r -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g {} + ; grep -R '__[A-Z_]*__' /tmp/r && { echo 'ERROR: unresolved __PLACEHOLDERS__ — add to atlantis-app-vars secret'; exit 1; } ; n=$(grep -Rh '^kind:' /tmp/r | wc -l) ; kubectl apply -R -f /tmp/r --dry-run=server -o name 2>/dev/null | tee /tmp/a | sed 's/^/would-apply: /' ; a=$(wc -l < /tmp/a) ; [ \"$a\" = \"$n\" ] || { echo \"ERROR: only $a/$n objects validated - one failed silently (stderr suppressed)\"; exit 1; }"
+            sh -c "rm -rf /tmp/r && cp -rL $DIR /tmp/r && find /tmp/r -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g {} + ; grep -Rq __PLACEHOLDER_SENTINEL__ /tmp/r ; grep -Rq '__[A-Z_]*__' /tmp/r && { echo ERROR-unresolved-placeholders ; exit 1 ; } ; kubectl apply -R -f /tmp/r --dry-run=server -o name 2>/dev/null | tee /tmp/a | sed s/^/would-apply:/ ; test $(wc -l < /tmp/a) -eq $(grep -Rh ^kind: /tmp/r | wc -l) || { echo ERROR-object-count-mismatch-one-failed-silently ; exit 1 ; }"
     apply:
       steps:
-        # render __VAR__ placeholders from pod env (atlantis-app-vars secret), then apply
+        # render then apply the rendered copy
         - run: >-
-            sh -c "find $DIR -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/$NFS_MEDIA_SERVER/g {} + && kubectl apply -R -f $DIR"
+            sh -c "rm -rf /tmp/r && cp -rL $DIR /tmp/r && find /tmp/r -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g {} + ; grep -Rq '__[A-Z_]*__' /tmp/r && { echo ERROR-unresolved-placeholders ; exit 1 ; } ; kubectl apply -R -f /tmp/r"
