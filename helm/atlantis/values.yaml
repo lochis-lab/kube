@@ -27,12 +27,6 @@ repoConfig: |
 
 # tier-3 internal values injected at apply time (see atlantis.yaml apps workflow)
 environmentSecrets:
-  - name: NFS_MEDIA_SERVER
-    secretKeyRef: { name: atlantis-app-vars, key: NFS_MEDIA_SERVER }
-  - name: SEARXNG_SECRET
-    secretKeyRef: { name: atlantis-app-vars, key: SEARXNG_SECRET }
-  - name: WEBSHARE_PROXY_URL
-    secretKeyRef: { name: atlantis-app-vars, key: WEBSHARE_PROXY_URL }
   - name: TF_VAR_nfs_media_server
     secretKeyRef: { name: atlantis-app-vars, key: NFS_MEDIA_SERVER }
   - name: TF_VAR_searxng_secret
