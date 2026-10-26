@@ -1,3 +1,4 @@
+version: 3
 # Atlantis repo config. Solo operator: approvals can't come from the PR author,
 # so apply gate = mergeable + undiverged.
 projects:
