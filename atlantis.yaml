@@ -1,9 +1,5 @@
 # Atlantis repo config. Solo operator: approvals can't come from the PR author,
 # so apply gate = mergeable + undiverged.
-repos:
-  - id: github.com/lochis-lab/kube
-    allowed_overrides: [workflow]
-    allow_custom_workflows: true
 projects:
   - name: terraform-infra
     dir: terraform/infra
