@@ -29,6 +29,10 @@ repoConfig: |
 environmentSecrets:
   - name: NFS_MEDIA_SERVER
     secretKeyRef: { name: atlantis-app-vars, key: NFS_MEDIA_SERVER }
+  - name: SEARXNG_SECRET
+    secretKeyRef: { name: atlantis-app-vars, key: SEARXNG_SECRET }
+  - name: WEBSHARE_PROXY_URL
+    secretKeyRef: { name: atlantis-app-vars, key: WEBSHARE_PROXY_URL }
 
 environment:
   ATLANTIS_LOG_LEVEL: info
