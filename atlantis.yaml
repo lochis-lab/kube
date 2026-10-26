@@ -4,16 +4,16 @@ version: 3
 projects:
   - name: terraform-infra
     dir: terraform/infra
-    autoplan: { when_modified: ["*.tf"] }
+    autoplan: { when_modified: ["**/*.tf"] }
     apply_requirements: [mergeable, undiverged]
   - name: terraform-platform
     dir: terraform/platform
-    autoplan: { when_modified: ["*.tf"] }
+    autoplan: { when_modified: ["**/*.tf"] }
     apply_requirements: [mergeable, undiverged]
   - name: apps
     dir: apps
     workflow: kubectl
-    autoplan: { when_modified: ["*.yaml"] }
+    autoplan: { when_modified: ["**/*.yaml"] }
     apply_requirements: [mergeable, undiverged]
 workflows:
   kubectl:
