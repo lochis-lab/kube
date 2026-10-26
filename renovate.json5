@@ -1,0 +1,15 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  // Activated in phase 3 — Renovate CronJob not yet deployed.
+  "extends": ["config:recommended"],
+  "schedule": ["every 6 hours"],
+  "platform": "github",
+  "repositories": ["lochis-lab/kube"],
+  "kubernetes": { "enabled": true, "fileMatch": ["(^|/)apps/.*\\.ya?ml$"] },
+  "helm-values": { "fileMatch": ["(^|/)terraform/.*\\.ya?ml$"] },
+  "packageRules": [
+    { "matchDatasources": ["docker"], "matchPackagePatterns": ["^ghcr\\.io/lochis/"], "enabled": false },
+    { "matchManagers": ["kubernetes"], "groupName": "apps {{parentDir}}", "separateMinorPatch": false },
+    { "matchUpdateTypes": ["patch"], "groupName": true }
+  ]
+}
