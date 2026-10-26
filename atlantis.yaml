@@ -23,9 +23,9 @@ workflows:
         # assert none remain, dry-run, and guard that every object validated.
         # object names only in PR comments — full diffs would echo rendered values publicly.
         - run: >-
-            sh -c "rm -rf /tmp/r && cp -rL $DIR /tmp/r && find /tmp/r -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g {} + ;grep -Rq '__[A-Z_]*__' /tmp/r && { echo ERROR-unresolved-placeholders ; exit 1 ; } ; kubectl apply -R -f /tmp/r --dry-run=server -o name 2>/dev/null | tee /tmp/a | sed s/^/would-apply:/ ; test $(wc -l < /tmp/a) -eq $(grep -Rh ^kind: /tmp/r | wc -l) || { echo ERROR-object-count-mismatch-one-failed-silently ; exit 1 ; }"
+            sh -c "rm -rf /tmp/r && cp -rL $DIR /tmp/r && find /tmp/r -name '*.yaml' -exec sed -i -e s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g -e s/__SEARXNG_SECRET__/${SEARXNG_SECRET}/g -e s/__WEBSHARE_PROXY_URL__/${WEBSHARE_PROXY_URL}/g {} + ;grep -Rq '__[A-Z_]*__' /tmp/r && { echo ERROR-unresolved-placeholders ; exit 1 ; } ; kubectl apply -R -f /tmp/r --dry-run=server -o name 2>/dev/null | tee /tmp/a | sed s/^/would-apply:/ ; test $(wc -l < /tmp/a) -eq $(grep -Rh ^kind: /tmp/r | wc -l) || { echo ERROR-object-count-mismatch-one-failed-silently ; exit 1 ; }"
     apply:
       steps:
         # render then apply the rendered copy
         - run: >-
-            sh -c "rm -rf /tmp/r && cp -rL $DIR /tmp/r && find /tmp/r -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g {} + ; grep -Rq '__[A-Z_]*__' /tmp/r && { echo ERROR-unresolved-placeholders ; exit 1 ; } ; kubectl apply -R -f /tmp/r"
+            sh -c "rm -rf /tmp/r && cp -rL $DIR /tmp/r && find /tmp/r -name '*.yaml' -exec sed -i -e s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g -e s/__SEARXNG_SECRET__/${SEARXNG_SECRET}/g -e s/__WEBSHARE_PROXY_URL__/${WEBSHARE_PROXY_URL}/g {} + ; grep -Rq '__[A-Z_]*__' /tmp/r && { echo ERROR-unresolved-placeholders ; exit 1 ; } ; kubectl apply -R -f /tmp/r"

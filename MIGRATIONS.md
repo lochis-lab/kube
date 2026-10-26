@@ -9,7 +9,6 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | 1 | searxng | deploy+svc+IR | identical manifests on both stash hosts; pin image | ⬜ |
 | 2 | dealchis | deploy+svc+IR | own image already pinned 0.0.1 | ⬜ |
 | 3 | osu-tracker | deploy+IR+cronjob | include the sync cronjob; LB svc exists | ⬜ |
-| 4 | micro-transcribe | deploy+IR | | ⬜ |
 
 ## Tier 2 — real state, still simple shapes
 | # | App | Objects | Notes | Status |
@@ -19,7 +18,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | 7 | n8n | deploy+pg STS+PVC | db in-cluster; secrets via k8s Secret only | ⬜ |
 | 8 | firecrawl | 6 deploys+2 PVC | already digest-pinned (Renovate digest PRs) | ⬜ |
 | 9 | wyze-bridge | deploy+IR | camera creds — verify secretRef, never inline | ⬜ |
-| 10 | batch: vocard, paloch, omniroute, pi-omni, auto-school | mixed | own images (renovate-disabled) + small PVCs; group as 5 tiny PRs | ⬜ |
+| 10 | batch: vocard, paloch, omniroute, auto-school | mixed | own images (renovate-disabled) + small PVCs; group as 4 tiny PRs | ⬜ |
 
 ## Tier 3 — critical infra & multi-env (schedule windows)
 | # | App | Objects | Notes | Status |
@@ -41,6 +40,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 ## Decommission candidates (do NOT migrate)
 - default ns playground: lavalink, mongo, mongo-express
 - udpTest (test junk) · valheim/ (manifests exist, nothing deployed)
+- micro-transcribe + pi-omni — user confirmed 2026-11: not staying; decommission workloads when convenient
 - portainer — overlaps Atlantis; decommission after tier 4 stabilizes
 - kubero-managed apps (aerosol, rockywestprod) stay kubero's problem
 - rancher stack / longhorn / kube-vip / coredns: hands-off forever (own upgrade paths)
