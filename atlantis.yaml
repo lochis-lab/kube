@@ -23,7 +23,7 @@ workflows:
         # assert none remain, then dry-run — object names only in PR comments
         # (full diffs would echo rendered internal values into a public repo)
         - run: >-
-            sh -c "rm -rf /tmp/r && cp -rL $DIR /tmp/r && find /tmp/r -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/$NFS_MEDIA_SERVER__/g {} + ; grep -R '__[A-Z_]*__' /tmp/r && { echo 'ERROR: unresolved __PLACEHOLDERS__ — add to atlantis-app-vars secret'; exit 1; } ; kubectl apply -R -f /tmp/r --dry-run=server -o name 2>/dev/null | sed 's/^/would-apply: /'"
+            sh -c "rm -rf /tmp/r && cp -rL $DIR /tmp/r && find /tmp/r -name '*.yaml' -exec sed -i s/__NFS_MEDIA_SERVER__/${NFS_MEDIA_SERVER}/g {} + ; grep -R '__[A-Z_]*__' /tmp/r && { echo 'ERROR: unresolved __PLACEHOLDERS__ — add to atlantis-app-vars secret'; exit 1; } ; kubectl apply -R -f /tmp/r --dry-run=server -o name 2>/dev/null | sed 's/^/would-apply: /'"
     apply:
       steps:
         # render __VAR__ placeholders from pod env (atlantis-app-vars secret), then apply
