@@ -40,7 +40,7 @@ defaultTFVersion: "1.17.0"               # match repo required_version
 # kubectl for the apps/ custom workflow — copied from the official image into /tools
 initContainers:
   - name: kubectl
-    image: docker.io/library/alpine:3.22
+    image: docker.io/library/alpine:3.24
     command: ["/bin/sh", "-c", "wget -qO /tools/kubectl https://dl.k8s.io/release/v1.33.9/bin/linux/amd64/kubectl && chmod +x /tools/kubectl"]  # pin matches cluster server
     volumeMounts:
       - { name: kubectl-tools, mountPath: /tools }
