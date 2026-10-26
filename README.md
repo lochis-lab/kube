@@ -4,7 +4,7 @@ GitOps source of truth for the homelab k3s cluster.
 
 ## Layout
 - `apps/` — per-app raw manifests (applied via Atlantis custom workflow)
-- `terraform/infra/` — state backend, namespaces, Atlantis itself
+- `terraform/infra/` — Terraform state backend (kubernetes backend: Secret+Lease in ns `ops`), namespaces, Atlantis itself
 - `terraform/platform/` — platform helm releases (reflector, homepage, pihole, cert-manager, authentik, traefik — import order = risk-ascending)
 - `plans/` — system-upgrade-controller plans (k3s version pinned here; Renovate bumps it)
 - `docs/` — runbooks (operational access details live off-repo)
