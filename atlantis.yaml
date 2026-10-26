@@ -18,7 +18,7 @@ workflows:
   kubectl:
     plan:
       steps:
-        - run: sh ../../scripts/kubectl-apps.sh plan $DIR
+        - run: sh ../scripts/kubectl-apps.sh plan $DIR
     apply:
       steps:
-        - run: sh ../../scripts/kubectl-apps.sh apply $DIR
+        - run: sh ../scripts/kubectl-apps.sh apply $DIR
