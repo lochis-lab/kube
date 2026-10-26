@@ -1,4 +1,4 @@
-# Audiobookshelf — canonical source (this repo). namespace: EXPLICIT (kubectl apply fallback caused the ops-ns duplication incident).
+# Audiobookshelf — canonical source (this repo). namespace EXPLICIT; ingress.class/websocket annotations load-bearing.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -194,6 +194,9 @@ metadata:
     io.portainer.kubernetes.application.stackid: '343'
   name: audiobookshelf
   namespace: audiobookshelf
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+    traefik.ingress.kubernetes.io/websocket: 'true'
 spec:
   entryPoints:
   - outbound
@@ -218,6 +221,9 @@ metadata:
     io.portainer.kubernetes.application.stackid: '343'
   name: audiobookshelf-ws
   namespace: audiobookshelf
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+    traefik.ingress.kubernetes.io/websocket: 'true'
 spec:
   entryPoints:
   - outbound2
