@@ -23,6 +23,7 @@ repoConfig: |
   repos:
     - id: /.*/
       allowed_overrides: [workflow, apply_requirements]
+      allow_custom_workflows: true
 
 # tier-3 internal values injected at apply time (see atlantis.yaml apps workflow)
 environmentSecrets:
