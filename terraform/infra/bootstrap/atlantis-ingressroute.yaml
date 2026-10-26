@@ -1,14 +1,17 @@
-# Atlantis ingress — Traefik IngressRoute (chart supports only standard Ingress; this cluster's convention is IngressRoute).
+# Atlantis ingress — rides the existing outbound entrypoint (WAN DNAT 2459 -> traefik),
+# host-routed alongside headscale. Wildcard cert *.vanderloch.com (Reflector copy of traefik/lochis-tls).
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: atlantis
   namespace: ops
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
 spec:
-  entryPoints: [websecure]
+  entryPoints: [outbound]
   routes:
     - match: Host(`atlantis.vanderloch.com`)
       kind: Rule
       services: [{ name: atlantis, namespace: ops, port: 80 }]
   tls:
-    certResolver: default
+    secretName: lochis-tls

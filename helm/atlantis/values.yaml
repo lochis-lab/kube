@@ -7,7 +7,7 @@ image:
   tag: "v0.48.2"            # pinned; Renovate bumps
   pullPolicy: IfNotPresent
 
-atlantisUrl: "https://atlantis.vanderloch.com"  # must be reachable from GitHub webhooks (see docs/BOOTSTRAP.md)
+atlantisUrl: "https://atlantis.vanderloch.com:2459"  # rides the existing outbound DNAT, host-routed with headscale
 orgAllowlist: "github.com/lochis-lab/kube"
 
 github:
