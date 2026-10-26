@@ -2,7 +2,6 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   // Hosted Renovate (GitHub App) — no platform/repositories keys (self-hosted only)
   "extends": ["config:recommended"],
-  "schedule": ["every 6 hours"],
   "timezone": "America/New_York",
   "kubernetes": { "fileMatch": ["(^|/)apps/.*\\.ya?ml$"] },
   "packageRules": [
