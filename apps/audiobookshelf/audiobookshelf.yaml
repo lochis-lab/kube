@@ -1,6 +1,4 @@
-# Audiobookshelf — exported from live cluster (2026-11)
-# Canonical source: this repo (no prior manifest files existed anywhere).
-# Jackett removed by request (left running in cluster, unmanaged).
+# Audiobookshelf — canonical source (this repo). Exported from live 2026-11; clusterIP etc. stripped (immutable/allocated).
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -113,7 +111,7 @@ spec:
       - env:
         - name: TZ
           value: America/Toronto
-        image: ghcr.io/advplyr/audiobookshelf:2.37.2  # verified: running digest == this tag (sha256:b897c33f...)
+        image: ghcr.io/advplyr/audiobookshelf:2.37.2
         imagePullPolicy: Always
         name: audiobookshelf
         ports:
@@ -165,13 +163,6 @@ metadata:
     io.portainer.kubernetes.application.stackid: '343'
   name: audiobookshelf
 spec:
-  clusterIP: 10.43.43.205
-  clusterIPs:
-  - 10.43.43.205
-  internalTrafficPolicy: Cluster
-  ipFamilies:
-  - IPv4
-  ipFamilyPolicy: SingleStack
   ports:
   - name: http
     port: 2459
@@ -231,5 +222,3 @@ spec:
       scheme: http
   tls:
     secretName: lochis-tls
-# e2e test: atlantis autoplan trigger (no functional change)
-# retrigger with actual file change
