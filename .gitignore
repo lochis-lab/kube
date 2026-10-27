@@ -3,3 +3,4 @@
 *.tfvars
 .crash
 plan.out
+AGENTS.md
