@@ -39,7 +39,12 @@ resource "kubernetes_deployment_v1" "postgres" {
     labels    = { app = "postgres" }
   }
   spec {
+    # Recreate: single replica on RWO Longhorn PVC — a RollingUpdate surge pod
+    # lands on another node and deadlocks on Multi-Attach.
     replicas = 1
+    strategy {
+      type = "Recreate"
+    }
     selector {
       match_labels = { app = "postgres" }
     }
@@ -109,7 +114,12 @@ resource "kubernetes_deployment_v1" "redis" {
     labels    = { app = "redis" }
   }
   spec {
+    # Recreate: single replica on RWO Longhorn PVC — a RollingUpdate surge pod
+    # lands on another node and deadlocks on Multi-Attach.
     replicas = 1
+    strategy {
+      type = "Recreate"
+    }
     selector {
       match_labels = { app = "redis" }
     }
