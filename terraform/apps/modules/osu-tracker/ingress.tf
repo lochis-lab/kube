@@ -1,4 +1,7 @@
 resource "kubernetes_manifest" "osu_tracker_ir" {
+  field_manager {
+    force_conflicts = true # portainer + our manual terraform-manager SSA both claim fields
+  }
   manifest = {
     apiVersion = "traefik.io/v1alpha1"
     kind       = "IngressRoute"

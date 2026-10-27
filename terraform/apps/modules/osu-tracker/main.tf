@@ -125,6 +125,9 @@ resource "kubernetes_service_v1" "osu_tracker_svc" {
 # forces replacement on every plan (provider defaults completions/parallelism
 # to 1 against the API's nil; known provider bug). Raw manifest = no churn.
 resource "kubernetes_manifest" "osu_tracker_sync" {
+  field_manager {
+    force_conflicts = true # portainer + our manual terraform-manager SSA both claim fields
+  }
   manifest = {
     apiVersion = "batch/v1"
     kind       = "CronJob"
