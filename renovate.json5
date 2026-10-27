@@ -41,5 +41,19 @@
       ],
       groupName: 'apps patch bumps',
     },
+    {
+      // Stateful singletons (postgres/redis on PVCs): a major bump is a data
+      // migration (pg_dump/restore), never an image tag swap — don't propose it.
+      matchDatasources: [
+        'docker',
+      ],
+      matchPackageNames: [
+        '/^docker\\.io\\/library\\/(postgres|redis|mongo|mariadb|mysql)/',
+      ],
+      matchUpdateTypes: [
+        'major',
+      ],
+      enabled: false,
+    },
   ],
 }
