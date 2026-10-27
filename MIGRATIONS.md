@@ -14,7 +14,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | # | App | Objects | Notes | Status |
 |---|---|---|---|---|
 | 5 | homeassistant | deploy+PVC+IR | ✅ PR #30 — USB-passthrough pre-check: none exists (plain PVC shape); Recreate kept; PVC 10Gi longhorn | ✅ |
-| 6 | cloudreve | 3 deploys+2 PVC | app+postgres+redis; pin `:latest`s | ⬜ |
+| 6 | cloudreve | 3 deploys+2 PVC | ✅ PR #37+#40 — app digest-pinned (sha256:5c6c5baf…); cloudreve-config Secret unmanaged; Recreate strategy on pg/redis (RWO Multi-Attach trap); redis requirepass command restored from old RS after 500 incident; DB majors config-pinned (#41) | ✅ |
 | 7 | n8n | deploy+pg STS+PVC | db in-cluster; secrets via k8s Secret only | ⬜ |
 | 8 | firecrawl | 6 deploys+2 PVC | ✅ PR #32 — firecrawl-secret stays unmanaged (envFrom/secretKeyRef); worker drain windows + playwright securityContext preserved; scrape-verified end-to-end | ✅ |
 | 9 | wyze-bridge | deploy+IR | camera creds — verify secretRef, never inline | ⬜ |
