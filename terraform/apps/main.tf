@@ -54,3 +54,8 @@ module "vocard" {
   source    = "./modules/vocard"
   namespace = kubernetes_namespace_v1.vocard.metadata[0].name
 }
+
+module "omniroute" {
+  source    = "./modules/omniroute"
+  namespace = kubernetes_namespace_v1.omniroute.metadata[0].name
+}
