@@ -51,4 +51,4 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 3. Strip clusterIP/ipFamilies from Services.
 4. Single-instance RWO apps → `strategy: Recreate`.
 5. `kubectl diff -R -f` (rendered) = 0 lines before deleting legacy sources.
-6. One app per PR; apply via `atlantis apply -p apps`; verify route 200 after.
+6. One app per PR; apply via `atlantis apply -p terraform-apps`; verify route 200 after.
