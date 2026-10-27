@@ -17,7 +17,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | 6 | cloudreve | 3 deploys+2 PVC | ✅ PR #37+#40 — app digest-pinned (sha256:5c6c5baf…); cloudreve-config Secret unmanaged; Recreate strategy on pg/redis (RWO Multi-Attach trap); redis requirepass command restored from old RS after 500 incident; DB majors config-pinned (#41) | ✅ |
 | 7 | n8n | deploy+pg STS+PVC | ✅ this PR — app digest-pinned (sha256:d02752c6…); n8n-secret + postgres-secret unmanaged (secretKeyRef only); pg 16 major-pinned; headless svc preserved | ✅ |
 | 8 | firecrawl | 6 deploys+2 PVC | ✅ PR #32 — firecrawl-secret stays unmanaged (envFrom/secretKeyRef); worker drain windows + playwright securityContext preserved; scrape-verified end-to-end | ✅ |
-| 10 | batch: vocard, paloch, omniroute, auto-school | mixed | own images (renovate-disabled) + small PVCs; group as 4 tiny PRs | ⬜ |
+| 10 | batch: vocard, paloch, omniroute, auto-school | mixed | ✅ PRs #55/#56/#57/#58 — 4 tiny PRs done; vocard dashboard inline secrets → unmanaged Secret; omniroute tailscale sidecar automount fix (2/2 Running); pgvector added to major-pin rule | ✅ |
 
 ## Tier 3 — critical infra & multi-env (schedule windows)
 | # | App | Objects | Notes | Status |
