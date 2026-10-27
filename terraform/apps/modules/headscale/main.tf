@@ -69,7 +69,7 @@ resource "kubernetes_deployment_v1" "headscale" {
         }
         container {
           name              = "headscale-console"
-          image             = "ghcr.io/rickli-cloud/headscale-console@sha256:00c82a85a68aaa02a588ce35861e74c14a88aea7522d27ec51afde34be191b1c" # was :latest — digest-pinned at import
+          image             = "ghcr.io/rickli-cloud/headscale-console@sha256:c160970042988dee0ee2610b13b7fb0557fb8eb16e4eb31770e9048c9a678d18" # was :latest — digest-pinned at import
           command           = ["headscale-console"]
           args              = ["serve"]
           image_pull_policy = "IfNotPresent"
