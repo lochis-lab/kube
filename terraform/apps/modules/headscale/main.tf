@@ -38,7 +38,7 @@ resource "kubernetes_deployment_v1" "headscale" {
         enable_service_links            = false
         container {
           name              = "headscale"
-          image             = "headscale/headscale:v0.29"
+          image             = "headscale/headscale:v0.29.6"
           command           = ["headscale"]
           args              = ["serve"]
           image_pull_policy = "IfNotPresent"
@@ -69,7 +69,7 @@ resource "kubernetes_deployment_v1" "headscale" {
         }
         container {
           name              = "headscale-console"
-          image             = "ghcr.io/rickli-cloud/headscale-console@sha256:c160970042988dee0ee2610b13b7fb0557fb8eb16e4eb31770e9048c9a678d18" # was :latest — digest-pinned at import
+          image             = "ghcr.io/rickli-cloud/headscale-console@sha256:4bdd88593befb32e982d3b44245fd8f06909e4c325d952f02baffc673635d6a7" # 0.7.3 — old digest was a stale pre-static build that 404'd every path
           command           = ["headscale-console"]
           args              = ["serve"]
           image_pull_policy = "IfNotPresent"
@@ -150,6 +150,11 @@ resource "kubernetes_service_v1" "headscale" {
       port        = 3478
       protocol    = "UDP"
       target_port = 3478
+    }
+    port {
+      name        = "console"
+      port        = 3000
+      target_port = 3000
     }
     port {
       name        = "metrics"

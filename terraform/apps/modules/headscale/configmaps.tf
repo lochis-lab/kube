@@ -13,8 +13,6 @@ resource "kubernetes_config_map_v1" "config" {
     grpc_listen_addr: 0.0.0.0:50443
     grpc_allow_insecure: false
 
-    private_key_path: /var/lib/headscale/private.key
-
     noise:
       private_key_path: /var/lib/headscale/noise_private.key
 
@@ -59,10 +57,7 @@ resource "kubernetes_config_map_v1" "console_config" {
   data = { "config.json" = <<-EOT
     {
       "logLevel": "INFO",
-      "controlUrl": "https://headscaleconsole.vanderloch.com:2459",
-      "selfserviceHostname": "headscale.vanderloch.com",
-      "policyserviceHostname": "headscale.vanderloch.com",
-      "serverSocket": "/var/run/headscale/headscale.sock"
+      "controlUrl": "https://headscale.vanderloch.com:2459"
     }
   EOT
   }
