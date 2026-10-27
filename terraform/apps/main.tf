@@ -39,3 +39,8 @@ module "firecrawl" {
   source    = "./modules/firecrawl"
   namespace = kubernetes_namespace_v1.firecrawl.metadata[0].name
 }
+
+module "n8n" {
+  source    = "./modules/n8n"
+  namespace = kubernetes_namespace_v1.n8n.metadata[0].name
+}
