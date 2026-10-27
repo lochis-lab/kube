@@ -152,6 +152,11 @@ resource "kubernetes_service_v1" "headscale" {
       target_port = 3478
     }
     port {
+      name        = "console"
+      port        = 3000
+      target_port = 3000
+    }
+    port {
       name        = "metrics"
       port        = 9090
       target_port = 9090
