@@ -23,3 +23,8 @@ module "osu_tracker" {
   osu_client_secret   = var.osu_client_secret
   osu_session_secret  = var.osu_session_secret
 }
+
+module "homeassistant" {
+  source    = "./modules/homeassistant"
+  namespace = kubernetes_namespace_v1.homeassistant.metadata[0].name
+}

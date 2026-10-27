@@ -39,3 +39,12 @@ resource "kubernetes_namespace_v1" "osu_tracker" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "homeassistant" {
+  metadata {
+    name = "homeassistant"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
