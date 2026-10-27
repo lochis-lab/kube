@@ -1,0 +1,46 @@
+name: db-major-watch
+on:
+  schedule:
+    - cron: "0 14 * * 0" # Sun 09:00 America/Toronto
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: db-major-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check pinned db majors vs upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          latest_major() { # highest major X for library/<img> offering an X-alpine tag
+            curl -s "https://hub.docker.com/v2/repositories/library/$1/tags?page_size=100" \
+              | jq -r '[.results[].name | select(test("^[0-9]+-alpine$")) | split("-")[0] | tonumber] | max'
+          }
+          # pinned majors currently referenced in modules (image = "...library/<img>:<major>-alpine")
+          pinned() { grep -rhoE "library/$1:[0-9]+" terraform/apps/modules --include='*.tf' \
+                     | cut -d: -f2 | sort -un | head -1; } # lowest pinned = the laggard
+          for img in postgres mongo mariadb mysql; do
+            pin=$(pinned "$img" || true); [ -z "$pin" ] && continue
+            cur=$(latest_major "$img" || echo "$pin")
+              if [ "$cur" -gt "$pin" ]; then
+                title="db major available: library/$img $pin -> $cur (pinned, manual migration)"
+                existing=$(gh issue list --state open --search "in:title db major available: library/$img" --json number -q 'length')
+                if [ "$existing" = "0" ]; then
+                  body=$(printf 'Renovate majors for stateful db images are config-disabled (renovate.json5) — a major is a data migration, not a tag swap.\n\n**Path:** docs/major-db-upgrades.md → `scripts/pg-major-upgrade.sh <ns> %s %s`\nSemantics: dump from live, restore into new `-v%s` PVC, PR, atlantis apply, then cleanup. Longhorn-snapshot the old PVC before starting.\n\nCheck the consuming app compatibility matrix first (cloudreve/n8n etc. often lag postgres majors).' "$pin" "$cur" "$cur")
+                  gh issue create -t "$title" -b "$body"
+                  echo "opened: $title"
+                else
+                  echo "issue already open for library/$img"
+                fi
+              fi
+          done

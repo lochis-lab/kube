@@ -42,13 +42,16 @@
       groupName: 'apps patch bumps',
     },
     {
-      // Stateful singletons (postgres/redis on PVCs): a major bump is a data
-      // migration (pg_dump/restore), never an image tag swap — don't propose it.
+      // Stateful singletons on PVCs: a major bump is a data migration
+      // (pg_dump/restore), never an image tag swap — don't propose it.
+      // Redis is EXEMPT: RDB format is major-compatible, tag+restart is safe
+      // (see docs/major-db-upgrades.md). Discovery for pinned majors:
+      // .github/workflows/db-major-watch.yml opens an issue.
       matchDatasources: [
         'docker',
       ],
       matchPackageNames: [
-        '/^docker\\.io\\/library\\/(postgres|redis|mongo|mariadb|mysql)/',
+        '/^docker\\.io\\/library\\/(postgres|mongo|mariadb|mysql)/',
       ],
       matchUpdateTypes: [
         'major',
