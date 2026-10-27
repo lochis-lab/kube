@@ -22,6 +22,11 @@ resource "kubernetes_deployment_v1" "osu_tracker" {
     namespace = var.namespace
     labels    = { app = "osu-tracker" }
   }
+  # Rancher actively re-adds field.cattle.io/publicEndpoints for the LB svc —
+  # controller-maintained, ignore the whole annotations map (ns/svc pattern).
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
   spec {
     replicas = 1
     selector {
