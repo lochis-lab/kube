@@ -7,7 +7,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 |---|---|---|---|---|
 | 0 | audiobookshelf | 8 | pilot; namespace+annotations+Recreate lessons baked in | ✅ |
 | 1 | searxng | ns+CM+deploy+svc | ✅ migrated via PR #15 — secrets extracted to atlantis-app-vars, digest-pinned | ✅ |
-| 2 | dealchis | deploy+svc+IR | own image already pinned 0.0.1 | ⬜ |
+| 2 | dealchis | deploy only | ✅ PR #25 — svc/IR no longer existed; creds stay in unmanaged k8s Secret | ✅ |
 | 3 | osu-tracker | deploy+IR+cronjob | include the sync cronjob; LB svc exists | ⬜ |
 
 ## Tier 2 — real state, still simple shapes
