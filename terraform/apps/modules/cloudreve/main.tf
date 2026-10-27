@@ -130,7 +130,7 @@ resource "kubernetes_deployment_v1" "redis" {
       spec {
         container {
           name              = "redis"
-          image             = "docker.io/library/redis:7-alpine"
+          image             = "docker.io/library/redis:8-alpine"
           image_pull_policy = "IfNotPresent"
           port {
             container_port = 6379
