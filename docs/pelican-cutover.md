@@ -204,6 +204,41 @@ journalctl -u wings -f
 Node `uuid`/`token_id`/`token` in the config are unchanged and still valid —
 Pelican's node row came from the clone.
 
+### 7.4b Actual host layout — wings runs in **Docker**, not systemd
+
+`192.168.10.18` (`wings-game-server-backup`) has no `/usr/local/bin/wings`; wings
+is a container (`wings-wings-1`) from
+`/home/lochis/pterodactyl/wings/docker-compose.yml`. SSH: `root` is refused
+(cloud-init) — log in as `lochis`, passwordless sudo. The host itself cannot
+resolve `*.vanderloch.com`; the container has `dns: [192.168.10.166, 8.8.8.8]`
+(Pi-hole), which is why wings could always reach the panel.
+
+The swap that was actually performed (no systemd, no binary in `/usr/local/bin`):
+
+```bash
+# backups
+cp -a /home/lochis/pterodactyl/wings/docker-compose.yml /root/wings-compose-<ts>.yml
+cp -a /etc/pterodactyl /root/pterodactyl-etc-<ts>
+tar -czf /root/valheim-<ts>.tar.gz -C /var/lib/pterodactyl/volumes e33a887d-…
+
+# config
+mkdir -p /etc/pelican
+cp /etc/pterodactyl/config.yml /etc/pelican/config.yml
+sed -i 's|^remote:.*|remote: https://pelican.vanderloch.com|' /etc/pelican/config.yml
+# allowed_origins: []  -> list https://pelican.vanderloch.com (websocket CheckOrigin
+# compares the browser Origin against `remote`; empty list + a mismatching/absent
+# Origin gives "websocket: request origin not allowed by Upgrader.CheckOrigin" 403)
+
+# compose edits: image ghcr.io/pelican/wings:<digest>, mount /etc/pelican instead of
+# /etc/pterodactyl, WINGS_USERNAME=pelican. Data mounts stay /var/lib/pterodactyl
+# (config's system.data/root_directory/backup_directory all point there).
+docker compose up -d && docker compose restart   # restart needed to reload config
+```
+
+Wings then logs `processing servers returned by the API total_configs=4`, loads
+all four servers and starts SFTP on 2022 / API on 27015. The Pelican image is
+distroless — no shell inside the container, logs only.
+
 ### 7.5 Verify in Pelican
 
 - Node shows online/connected in Admin → Nodes.
