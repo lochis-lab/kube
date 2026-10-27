@@ -28,3 +28,8 @@ module "homeassistant" {
   source    = "./modules/homeassistant"
   namespace = kubernetes_namespace_v1.homeassistant.metadata[0].name
 }
+
+module "firecrawl" {
+  source    = "./modules/firecrawl"
+  namespace = kubernetes_namespace_v1.firecrawl.metadata[0].name
+}
