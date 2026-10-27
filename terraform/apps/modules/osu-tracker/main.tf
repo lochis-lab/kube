@@ -148,7 +148,7 @@ resource "kubernetes_manifest" "osu_tracker_sync" {
               restartPolicy = "Never"
               containers = [{
                 name            = "sync"
-                image           = "curlimages/curl:8.16.0"
+                image           = "curlimages/curl:8.23.0"
                 imagePullPolicy = "Always"
                 args = [
                   "-sS", "-X", "POST",
