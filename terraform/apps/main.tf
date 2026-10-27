@@ -15,3 +15,11 @@ module "dealchis" {
   source    = "./modules/dealchis"
   namespace = kubernetes_namespace_v1.dealchis.metadata[0].name
 }
+
+module "osu_tracker" {
+  source              = "./modules/osu-tracker"
+  namespace           = kubernetes_namespace_v1.osu_tracker.metadata[0].name
+  osu_mongodb_uri     = var.osu_mongodb_uri
+  osu_client_secret   = var.osu_client_secret
+  osu_session_secret  = var.osu_session_secret
+}

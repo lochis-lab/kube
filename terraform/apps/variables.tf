@@ -12,3 +12,15 @@ variable "webshare_proxy_url" {
   description = "Webshare rotating proxy URL for searxng engine egress"
   sensitive   = true
 }
+variable "osu_mongodb_uri" {
+  description = "osu-tracker MongoDB connection string"
+  sensitive   = true
+}
+variable "osu_client_secret" {
+  description = "osu! OAuth client secret"
+  sensitive   = true
+}
+variable "osu_session_secret" {
+  description = "osu-tracker session + sync-shared secret"
+  sensitive   = true
+}
