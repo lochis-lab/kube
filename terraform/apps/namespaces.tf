@@ -75,3 +75,12 @@ resource "kubernetes_namespace_v1" "n8n" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "paloch" {
+  metadata {
+    name = "paloch"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
