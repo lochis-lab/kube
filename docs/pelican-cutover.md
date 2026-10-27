@@ -138,22 +138,91 @@ SOA negative TTL expires).
 - Nodes and servers appear **offline** — expected, wings still points at the
   Pterodactyl panel. Panel-side config editing works.
 
-## 7. Cutover (per node — the `wings` half)
+## 7. Cutover — node `wings.vanderloch.com` (192.168.10.18)
 
-For each node, after a final fresh dump+restore (step 4) so the preview is current:
+The one node: `daemonListen 27015`, SFTP `2022`, data root
+`/var/lib/pterodactyl/volumes`, `scheme https`, `behind_proxy 0`.
+Servers: Valheim (2456), Hytale (2458, suspended), V Rising (25565),
+Vintage Story (2457) — all on `192.168.10.18`.
+
+**World files are not copied or converted.** They are plain docker volumes under
+the wings data root; only wings addresses them, and wings keeps using the same
+path (`system.data` stays `/var/lib/pterodactyl/volumes`). Nothing about Pelican
+requires the `/var/lib/pelican` path — it is config-driven. Rename later in a
+maintenance window if the naming bothers you (`mv` on the same filesystem, then
+update `system.data`).
+
+### 7.1 Pre-flight (read-only, no changes)
 
 ```bash
-sudo systemctl stop wings
-sudo curl -fsSL -o /usr/local/bin/wings \
-  "https://github.com/pelican/wings/releases/latest/download/wings_linux_amd64"
-sudo chmod +x /usr/local/bin/wings
-sudo mkdir -p /etc/pelican
-sudo cp /etc/pterodactyl/config.yml /etc/pelican/config.yml
-# update /etc/systemd/system/wings.service: WorkingDirectory=/etc/pelican
-sudo systemctl daemon-reload && sudo systemctl start wings
+ssh root@192.168.10.18
+systemctl status wings --no-pager
+/usr/local/bin/wings --version
+sed -n '1,40p' /etc/pterodactyl/config.yml     # note remote:, data:, sftp bind_port
+df -h /var/lib/pterodactyl
+docker ps --format '{{.Names}}\t{{.Status}}'
+getent hosts pelican.vanderloch.com            # must be 192.168.10.170
+curl -sI https://pelican.vanderloch.com/login | head -3
 ```
 
-Then disable the Pterodactyl panel route so nobody writes to the old DB.
+Stop if the node cannot resolve `pelican.vanderloch.com` (its DNS must be
+Pi-hole, or the record must exist upstream) — wings talks to the panel by name,
+and the TLS cert is `*.vanderloch.com`.
+
+### 7.2 Backups on the node
+
+```bash
+cp -a /etc/pterodactyl /root/pterodactyl-etc-$(date +%F)
+cp -a /usr/local/bin/wings /root/wings-pterodactyl-$(date +%F)
+du -sh /var/lib/pterodactyl/volumes/* > /root/volumes-sizes-$(date +%F).txt
+```
+
+The panel DB dump already exists (`backups/pterodactyl-panel-pre-pelican-*.sql`).
+
+### 7.3 Quiesce
+
+Stop the running servers from the **Pterodactyl** panel (Valheim, V Rising,
+Vintage Story) and let them reach "offline" so the worlds flush. Hytale stays
+suspended.
+
+### 7.4 Swap wings
+
+```bash
+systemctl stop wings
+curl -fsSL -o /usr/local/bin/wings \
+  "https://github.com/pelican/wings/releases/latest/download/wings_linux_amd64"
+chmod +x /usr/local/bin/wings
+mkdir -p /etc/pelican
+cp /etc/pterodactyl/config.yml /etc/pelican/config.yml
+sed -i 's|^remote:.*|remote: https://pelican.vanderloch.com|' /etc/pelican/config.yml
+# /etc/systemd/system/wings.service: WorkingDirectory=/etc/pelican (ExecStart unchanged)
+systemctl daemon-reload
+systemctl start wings
+journalctl -u wings -f
+```
+
+Node `uuid`/`token_id`/`token` in the config are unchanged and still valid —
+Pelican's node row came from the clone.
+
+### 7.5 Verify in Pelican
+
+- Node shows online/connected in Admin → Nodes.
+- 4 servers listed with their allocations; Hytale still suspended.
+- Start Vintage Story → console streams, connect on 2457, SFTP on 2022 works.
+- Check a server's file manager lists the world directory (nothing re-created).
+
+### 7.6 Rollback (any time in week 1)
+
+```bash
+systemctl stop wings
+cp /root/wings-pterodactyl-<date> /usr/local/bin/wings
+sed -i 's|^remote:.*|remote: https://pterodactyl.vanderloch.com|' /etc/pterodactyl/config.yml
+# unit WorkingDirectory=/etc/pterodactyl
+systemctl daemon-reload && systemctl start wings
+```
+
+Pterodactyl's panel + DB are untouched, so the old panel still has all its data.
+Anything created or changed in Pelican after the swap does not exist there.
 
 ## 8. After the cutover
 
