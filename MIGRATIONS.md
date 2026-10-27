@@ -13,7 +13,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 ## Tier 2 — real state, still simple shapes
 | # | App | Objects | Notes | Status |
 |---|---|---|---|---|
-| 5 | homeassistant | deploy+PVC+IR | CHECK hardware passthrough (USB dongles) before applying | ⬜ |
+| 5 | homeassistant | deploy+PVC+IR | ✅ PR #30 — USB-passthrough pre-check: none exists (plain PVC shape); Recreate kept; PVC 10Gi longhorn | ✅ |
 | 6 | cloudreve | 3 deploys+2 PVC | app+postgres+redis; pin `:latest`s | ⬜ |
 | 7 | n8n | deploy+pg STS+PVC | db in-cluster; secrets via k8s Secret only | ⬜ |
 | 8 | firecrawl | 6 deploys+2 PVC | already digest-pinned (Renovate digest PRs) | ⬜ |
