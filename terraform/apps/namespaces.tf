@@ -66,3 +66,12 @@ resource "kubernetes_namespace_v1" "firecrawl" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "n8n" {
+  metadata {
+    name = "n8n"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
