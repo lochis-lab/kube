@@ -52,6 +52,7 @@
       ],
       matchPackageNames: [
         '/^docker\\.io\\/library\\/(postgres|mongo|mariadb|mysql)/',
+        '/^docker\\.io\\/pgvector\\/pgvector/',
       ],
       matchUpdateTypes: [
         'major',

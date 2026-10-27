@@ -59,3 +59,8 @@ module "omniroute" {
   source    = "./modules/omniroute"
   namespace = kubernetes_namespace_v1.omniroute.metadata[0].name
 }
+
+module "auto_school" {
+  source    = "./modules/auto-school"
+  namespace = kubernetes_namespace_v1.auto_school.metadata[0].name
+}
