@@ -33,6 +33,12 @@ environmentSecrets:
     secretKeyRef: { name: atlantis-app-vars, key: SEARXNG_SECRET }
   - name: TF_VAR_webshare_proxy_url
     secretKeyRef: { name: atlantis-app-vars, key: WEBSHARE_PROXY_URL }
+  - name: TF_VAR_osu_mongodb_uri
+    secretKeyRef: { name: atlantis-app-vars, key: OSU_MONGODB_URI }
+  - name: TF_VAR_osu_client_secret
+    secretKeyRef: { name: atlantis-app-vars, key: OSU_CLIENT_SECRET }
+  - name: TF_VAR_osu_session_secret
+    secretKeyRef: { name: atlantis-app-vars, key: OSU_SESSION_SECRET }
 
 environment:
   ATLANTIS_LOG_LEVEL: info

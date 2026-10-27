@@ -30,3 +30,12 @@ resource "kubernetes_namespace_v1" "dealchis" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "osu_tracker" {
+  metadata {
+    name = "osu-tracker"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
