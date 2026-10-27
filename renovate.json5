@@ -4,6 +4,10 @@
     'config:recommended',
   ],
   timezone: 'America/New_York',
+  // Rebase any open PR as soon as main moves (not only on conflict) — keeps
+  // Atlantis's `mergeable, undiverged` apply requirements satisfied without
+  // manual rebases. Overrides config:recommended's `rebaseWhen: auto`.
+  rebaseWhen: 'behind-base-branch',
   customManagers: [
     {
       customType: 'regex',
