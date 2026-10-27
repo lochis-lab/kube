@@ -135,7 +135,7 @@ resource "kubernetes_deployment_v1" "redis" {
           # redis image ignores env passwords — explicit requirepass (k8s expands
           # $(REDIS_PASSWORD) from the container env below)
           command          = ["redis-server", "--requirepass", "$(REDIS_PASSWORD)"]
-          image            = "docker.io/library/redis:7-alpine"
+          image            = "docker.io/library/redis:8-alpine"
           image_pull_policy = "IfNotPresent"
           port {
             container_port = 6379
