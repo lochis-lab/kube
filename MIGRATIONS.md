@@ -22,7 +22,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 ## Tier 3 — critical infra & multi-env (schedule windows)
 | # | App | Objects | Notes | Status |
 |---|---|---|---|---|
-| 11 | headscale | deploy+PVC+IR | TAILNET CONTROL PLANE — a bad apply cuts remote access; pin console `:latest`; re-test plan on a copied manifest first | ⬜ |
+| 11 | headscale | deploy+PVC+IR | ✅ PR #60 — 10 objs (ns,deploy,svc,PVC,2×CM,3×IR,IRTCP-gRPC-passthrough); RollingUpdate→Recreate (RWO multi-attach); console :latest→digest; portainer labels off IRTCP; all tailnet nodes re-online after apply. Pre-existing console 404 (controlUrl :2459 vs IR :443 mismatch) NOT fallout | ✅ |
 | 12 | pterodactyl | 3 deploys+2 PVC | game panel; check hostPort/networking | ⬜ |
 | 13 | quickticket | 4 deploys+4 PVC+secrets | dev+prod PG/redis pairs | ⬜ |
 
