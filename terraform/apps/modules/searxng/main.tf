@@ -72,7 +72,7 @@ resource "kubernetes_deployment_v1" "searxng" {
       spec {
         container {
           name  = "searxng"
-          image = "docker.io/searxng/searxng@sha256:23482d8ecf7ddf66029479468ea04c1bb11d2b65785a17a7e629e2ffd13296ca"
+          image = "docker.io/searxng/searxng@sha256:a31763b7af3caf6ae9aac1816ba774214eb550252e06a4998f276ded8d60461b"
           env {
       name = "SEARXNG_BASE_URL"
       value = "http://searxng.searxng.svc:8080/"
