@@ -3,7 +3,18 @@
   // Hosted Renovate (GitHub App) — no platform/repositories keys (self-hosted only)
   "extends": ["config:recommended"],
   "timezone": "America/New_York",
-  "kubernetes": { "fileMatch": ["(^|/)apps/.*\\.ya?ml$"] },
+  // Apps are pure typed HCL now — the kubernetes manager only reads YAML, so
+  // image = "..." in .tf needs a regex manager. Covers both tag and digest pins.
+  "regexManagers": [
+    {
+      "fileMatch": ["^terraform/apps/.*\\.tf$"],
+      "matchStrings": [
+        "image\\s*=\\s*\"(?<depName>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]+)\"",
+        "image\\s*=\\s*\"(?<depName>[^:\"]+):(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
   "packageRules": [
     {
       "matchDatasources": ["docker"],
@@ -11,7 +22,7 @@
       "enabled": false
     },
     {
-      "matchManagers": ["kubernetes", "helm-values"],
+      "matchManagers": ["helm-values", "regex"],
       "matchUpdateTypes": ["patch"],
       "groupName": "apps patch bumps"
     }
