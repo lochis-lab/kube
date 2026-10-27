@@ -64,3 +64,8 @@ module "auto_school" {
   source    = "./modules/auto-school"
   namespace = kubernetes_namespace_v1.auto_school.metadata[0].name
 }
+
+module "headscale" {
+  source    = "./modules/headscale"
+  namespace = kubernetes_namespace_v1.headscale.metadata[0].name
+}
