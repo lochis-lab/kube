@@ -111,3 +111,12 @@ resource "kubernetes_namespace_v1" "auto_school" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "headscale" {
+  metadata {
+    name = "headscale"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
