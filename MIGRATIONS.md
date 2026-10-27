@@ -8,7 +8,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | 0 | audiobookshelf | 8 | pilot; namespace+annotations+Recreate lessons baked in | ✅ |
 | 1 | searxng | ns+CM+deploy+svc | ✅ migrated via PR #15 — secrets extracted to atlantis-app-vars, digest-pinned | ✅ |
 | 2 | dealchis | deploy only | ✅ PR #25 — svc/IR no longer existed; creds stay in unmanaged k8s Secret | ✅ |
-| 3 | osu-tracker | deploy+IR+cronjob | include the sync cronjob; LB svc exists | ⬜ |
+| 3 | osu-tracker | deploy+IR+cronjob | ✅ PR #27 — secrets extracted to atlantis-app-vars; cronjob as manifest (typed cron_job forces replacement); portainer SSA fields taken via kubectl force-apply + field_manager.force_conflicts | ✅ |
 
 ## Tier 2 — real state, still simple shapes
 | # | App | Objects | Notes | Status |
