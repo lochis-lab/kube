@@ -10,3 +10,8 @@ module "searxng" {
   searxng_secret     = var.searxng_secret
   webshare_proxy_url = var.webshare_proxy_url
 }
+
+module "dealchis" {
+  source    = "./modules/dealchis"
+  namespace = kubernetes_namespace_v1.dealchis.metadata[0].name
+}

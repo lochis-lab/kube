@@ -21,3 +21,12 @@ resource "kubernetes_namespace_v1" "searxng" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "dealchis" {
+  metadata {
+    name = "dealchis"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
