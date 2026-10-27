@@ -29,6 +29,22 @@ resource "kubernetes_persistent_volume_claim_v1" "redis_data" {
   }
 }
 
+# pg18 data (major upgrade 2026-10-27: dump from postgres-data restored via
+# scripts/pg-major-upgrade.sh; old pg15 PVC stays until cleanup after verification)
+resource "kubernetes_persistent_volume_claim_v1" "postgres_data_v18" {
+  metadata {
+    name      = "postgres-data-v18"
+    namespace = var.namespace
+  }
+  spec {
+    access_modes       = ["ReadWriteOnce"]
+    storage_class_name = "longhorn"
+    resources {
+      requests = { storage = "5Gi" } # immutable — matches live
+    }
+  }
+}
+
 # cloudreve-config Secret stays unmanaged (dealchis pattern): all db/redis
 # creds flow through secretKeyRef env below.
 
@@ -55,7 +71,7 @@ resource "kubernetes_deployment_v1" "postgres" {
       spec {
         container {
           name              = "postgres"
-          image             = "docker.io/library/postgres:15-alpine"
+          image             = "docker.io/library/postgres:18-alpine"
           image_pull_policy = "IfNotPresent"
           port {
             container_port = 5432
@@ -99,7 +115,7 @@ resource "kubernetes_deployment_v1" "postgres" {
         volume {
           name = "db-storage"
           persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim_v1.postgres_data.metadata[0].name
+            claim_name = kubernetes_persistent_volume_claim_v1.postgres_data_v18.metadata[0].name
           }
         }
       }
