@@ -48,3 +48,12 @@ resource "kubernetes_namespace_v1" "homeassistant" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "firecrawl" {
+  metadata {
+    name = "firecrawl"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
