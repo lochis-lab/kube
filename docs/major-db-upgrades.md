@@ -24,10 +24,12 @@ scripts/pg-major-upgrade.sh <namespace> <from> <to> [secret]
 
 The script: dumps the live deployment → creates `postgres-data-v<to>` PVC
 (size/class copied live) → runs a throwaway `postgres:<to>` pod on it with the
-same secret-sourced `POSTGRES_*` env → restores → prints the exact HCL edits,
-the `terraform import` line, and the post-apply cleanup. You commit what it
-prints, PR, `atlantis apply`, verify the app, then run the cleanup (old PVC
-delete + `state rm` + drop the old PVC resource from HCL).
+same secret-sourced `POSTGRES_*` env → restores → prints the exact HCL edits
+and cleanup. **Migration PR = add the new PVC resource + repoint the claim +
+bump the image. The old PVC resource stays in HCL until a separate cleanup PR**
+(removing it early would make the apply delete the old PVC and kill the
+revert-based rollback). You commit what it prints, PR, `atlantis apply`, verify
+the app, then cleanup (old PVC delete + `state rm` + drop the old resource).
 
 **Before starting:** Longhorn-snapshot the old PVC (that's the rollback —
 until the cleanup PR the old deployment + PVC are untouched, so a revert of
