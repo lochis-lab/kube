@@ -259,6 +259,55 @@ systemctl daemon-reload && systemctl start wings
 Pterodactyl's panel + DB are untouched, so the old panel still has all its data.
 Anything created or changed in Pelican after the swap does not exist there.
 
+## 7.7 Backups — what the migration does *not* do for you
+
+Two things are not carried over, and both fail quietly:
+
+**a) The backup host must be attached to the node.** Pelican keeps backup
+destinations in `backup_hosts` (`schema: wings` = the node's local
+`backup_directory`) and links them to nodes through `backup_host_node`. The
+migration creates the host and re-points the existing backup rows, but leaves
+`backup_host_node` **empty**, so `InitiateBackupService` has no host for the
+server's node and new backups can't be created. Fix (mirrors the admin UI):
+
+```sql
+insert into backup_host_node (node_id, backup_host_id, created_at, updated_at)
+values (<node_id>, <backup_host_id>, now(), now());
+```
+
+**b) Pelican stores backups per server, Pterodactyl stored them flat.** Wings'
+adapter path is
+`<backup_directory>/<server_uuid>/<backup_uuid>.tar.gz`, so every pre-migration
+tarball sitting directly in `backup_directory` becomes a 404 (download, delete
+and restore all fail) even though its row looks fine. Relocate them:
+
+```sql
+-- one line per backup, on the node:
+-- mv $B/<backup_uuid>.tar.gz $B/<server_uuid>/<backup_uuid>.tar.gz
+select concat(b.uuid,' ',s.uuid) from backups b join servers s on s.id=b.server_id;
+```
+
+Verify by diffing the DB against the filesystem — every `backups.uuid` must have
+`<server_uuid>/<uuid>.tar.gz`, and every file should have a row (a row deleted
+while the file was still flat leaves an orphan tarball behind).
+
+Sanity check of the whole path (this is what "backups work" means):
+
+```
+wings: creating backup ... path=/var/lib/pterodactyl/backups/<server>/<backup>.tar.gz
+wings: created backup successfully
+wings: notified panel of successful backup state
+DB:    is_successful=1, bytes>0, completed_at set
+```
+
+`servers.backup_limit` (10 here) is enforced on scheduled backups by deleting the
+oldest **unlocked** backup first.
+
+Known non-blocking issues seen right after the cutover: `RevokeSftpAccessJob`
+fails with `Typed property DaemonRepository::$server must not be accessed before
+initialization` (Pelican bug, one failed job per occurrence), and mail is still
+unconfigured — the inherited `MAIL_HOST=mail:1025` never existed.
+
 ## 8. After the cutover
 
 - Delete `pterodactyl-var-pvc` / `pterodactyl-db-pvc` only after a week of stable
