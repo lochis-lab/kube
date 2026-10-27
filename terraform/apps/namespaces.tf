@@ -84,3 +84,12 @@ resource "kubernetes_namespace_v1" "paloch" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "vocard" {
+  metadata {
+    name = "vocard"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}

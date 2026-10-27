@@ -49,3 +49,8 @@ module "paloch" {
   source    = "./modules/paloch"
   namespace = kubernetes_namespace_v1.paloch.metadata[0].name
 }
+
+module "vocard" {
+  source    = "./modules/vocard"
+  namespace = kubernetes_namespace_v1.vocard.metadata[0].name
+}
