@@ -74,7 +74,7 @@ resource "kubernetes_deployment_v1" "nuq_postgres" {
       spec {
         container {
           name            = "nuq-postgres"
-          image           = "ghcr.io/firecrawl/nuq-postgres@sha256:aed86f62858f29bd971abddcdeb301c12888098d2cf5d33c1ba42b053bc460f6"
+          image           = "ghcr.io/firecrawl/nuq-postgres@sha256:d719b36160eac2fcbe16dc7e7360ddb9c82c40ea5da183d07bf4a755c6a0b2ae"
           image_pull_policy = "IfNotPresent"
           port {
             container_port = 5432
