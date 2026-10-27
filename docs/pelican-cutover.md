@@ -113,6 +113,14 @@ kubectl -n pelican exec deploy/panel -- php artisan migrate --force   # resumes 
 Re-run `php artisan migrate --force` until it exits 0 with
 `migrate:status` showing no `Pending` rows, then seed.
 
+### Known pitfall 3 — storage not writable (`Unable to create a directory at /var/www/html/storage/app/public`)
+
+The panel runs as `www-data` (uid 82) and `storage/app/public` is a symlink to
+`/pelican-data/storage`, but the Longhorn PVC comes up `root:root` — so Laravel
+cannot create its storage dirs. The module ships a root `fix-perms` initContainer
+that `chown -R 82:82`s `/pelican-data` before the panel starts. Symptom without
+it: login page renders, then every view that touches storage throws.
+
 ### DNS
 
 `pelican.vanderloch.com` → Traefik LB is a **Pi-hole** local record

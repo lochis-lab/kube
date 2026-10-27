@@ -164,6 +164,25 @@ resource "kubernetes_deployment_v1" "panel" {
       spec {
         automount_service_account_token = false
         enable_service_links            = false
+        # /pelican-data is a Longhorn PVC (root:root). The panel runs as www-data
+        # (uid 82) and storage/app/public is a symlink to /pelican-data/storage,
+        # so Laravel cannot create its storage dirs without this.
+        init_container {
+          name              = "fix-perms"
+          image             = "docker.io/library/busybox:1.37"
+          image_pull_policy = "IfNotPresent"
+          command = [
+            "sh", "-c",
+            "mkdir -p /pelican-data/storage/app /pelican-data/plugins /pelican-data/database && chown -R 82:82 /pelican-data",
+          ]
+          security_context {
+            run_as_user = 0
+          }
+          volume_mount {
+            name       = "pelican-data"
+            mount_path = "/pelican-data"
+          }
+        }
         container {
           name = "panel"
           # beta image — digest-pinned; Renovate offers digest/tag bumps.
