@@ -9,7 +9,7 @@ resource "kubernetes_service_account_v1" "tailscale" {
     name      = "tailscale"
     namespace = var.namespace
   }
-  automount_service_account_token = false # matches live
+  automount_service_account_token = true # sidecar reads the token to write its state secret
 }
 
 resource "kubernetes_role_v1" "tailscale" {
@@ -90,7 +90,7 @@ resource "kubernetes_deployment_v1" "omniroute" {
       }
       spec {
         service_account_name            = kubernetes_service_account_v1.tailscale.metadata[0].name
-        automount_service_account_token = false # matches live (portainer-era); sidecar persists state on the ts-state PVC
+        automount_service_account_token = true # tailscale sidecar inits kube client (TS_KUBE_SECRET) — needs the SA token
         enable_service_links            = false
         container {
           name = "omniroute"
