@@ -120,3 +120,12 @@ resource "kubernetes_namespace_v1" "headscale" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "pelican" {
+  metadata {
+    name = "pelican"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
