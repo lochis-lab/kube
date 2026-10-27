@@ -1,20 +1,6 @@
 variable "namespace" { type = string }
 variable "nfs_media_server" { type = string }
 
-resource "kubernetes_persistent_volume_claim_v1" "postgres_data" {
-  metadata {
-    name      = "postgres-data"
-    namespace = var.namespace
-  }
-  spec {
-    access_modes       = ["ReadWriteOnce"]
-    storage_class_name = "longhorn"
-    resources {
-      requests = { storage = "5Gi" } # immutable — matches live
-    }
-  }
-}
-
 resource "kubernetes_persistent_volume_claim_v1" "redis_data" {
   metadata {
     name      = "redis-data"
@@ -29,8 +15,8 @@ resource "kubernetes_persistent_volume_claim_v1" "redis_data" {
   }
 }
 
-# pg18 data (major upgrade 2026-10-27: dump from postgres-data restored via
-# scripts/pg-major-upgrade.sh; old pg15 PVC stays until cleanup after verification)
+# pg18 data (major upgrade 2026-10-27: dump/restore from the old pg15 PVC via
+# scripts/pg-major-upgrade.sh (PR #48); old PVC deleted after row-for-row verification)
 resource "kubernetes_persistent_volume_claim_v1" "postgres_data_v18" {
   metadata {
     name      = "postgres-data-v18"
