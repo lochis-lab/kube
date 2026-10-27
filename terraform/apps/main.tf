@@ -69,3 +69,9 @@ module "headscale" {
   source    = "./modules/headscale"
   namespace = kubernetes_namespace_v1.headscale.metadata[0].name
 }
+
+# Replaces pterodactyl (ns pterodactyl stays live until the wings cutover).
+module "pelican" {
+  source    = "./modules/pelican"
+  namespace = kubernetes_namespace_v1.pelican.metadata[0].name
+}
