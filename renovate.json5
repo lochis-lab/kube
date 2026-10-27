@@ -8,38 +8,124 @@
   // Atlantis's `mergeable, undiverged` apply requirements satisfied without
   // manual rebases. Overrides config:recommended's `rebaseWhen: auto`.
   rebaseWhen: 'behind-base-branch',
+  // Every PR costs an Atlantis plan; keep the queue shallow.
+  prConcurrentLimit: 8,
+  prHourlyLimit: 4,
   customManagers: [
+    // --- Docker images pinned by tag:  image = "repo/name:1.2.3" ------------
+    // `[^:@"\s]+` before the colon is what keeps this from also matching the
+    // digest forms (`name@sha256:…` / `name:tag@sha256:…`) and inventing bogus
+    // deps like `repo/name@sha256` (those produced the "Failed to look up
+    // docker package …@sha256: no-result" warnings on the dashboard).
     {
       customType: 'regex',
       managerFilePatterns: [
-        '/^terraform/apps/.*\\.tf$/',
+        '/^terraform\/(apps|platform|infra)\/.*\\.tf$/',
       ],
       matchStrings: [
-        'image\\s*=\\s*"(?<depName>[^@"]+)@(?<currentDigest>sha256:[a-f0-9]+)"',
-        'image\\s*=\\s*"(?<depName>[^:"]+):(?<currentValue>[^"]+)"',
+        'image\\s*=\\s*"(?<depName>[^:@"\\s]+):(?<currentValue>[^:@"\\s]+)"',
       ],
       datasourceTemplate: 'docker',
+      versioningTemplate: 'docker',
+    },
+    // --- Docker images pinned by digest only: name@sha256:… -----------------
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^terraform\/(apps|platform|infra)\/.*\\.tf$/',
+      ],
+      matchStrings: [
+        'image\\s*=\\s*"(?<depName>[^:@"\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})"',
+      ],
+      datasourceTemplate: 'docker',
+      versioningTemplate: 'docker',
+    },
+    // --- Docker images pinned by tag + digest: name:latest@sha256:… ---------
+    // cloudreve uses this form. Without it the depName came out as
+    // "docker.io/cloudreve/cloudreve:latest", which Renovate cannot resolve
+    // ("Could not determine new digest for update").
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^terraform\/(apps|platform|infra)\/.*\\.tf$/',
+      ],
+      matchStrings: [
+        'image\\s*=\\s*"(?<depName>[^:@"\\s]+):(?<currentValue>[^:@"\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})"',
+      ],
+      datasourceTemplate: 'docker',
+      versioningTemplate: 'docker',
+    },
+    // --- kubectl in the atlantis initContainer (dl.k8s.io URL) --------------
+    // Must stay close to the cluster server version; opens a normal bump PR.
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^helm\\/.*\\.ya?ml$/',
+      ],
+      matchStrings: [
+        'dl\\.k8s\\.io/release/v(?<currentValue>\\d+\\.\\d+\\.\\d+)/bin/',
+      ],
+      depNameTemplate: 'kubernetes/kubernetes',
+      datasourceTemplate: 'github-releases',
+      extractVersionTemplate: '^v(?<version>.+)$',
     },
   ],
   packageRules: [
+    // The built-in `terraform` manager also extracts `image = "…"` as a docker
+    // dep, so every image got found twice → duplicate PRs (#54 vs #59, #61 vs
+    // #66). The custom managers above are the single source of truth.
+    {
+      matchManagers: [
+        'terraform',
+      ],
+      matchDatasources: [
+        'docker',
+      ],
+      enabled: false,
+    },
     {
       matchDatasources: [
         'docker',
       ],
       enabled: false,
       matchPackageNames: [
-        '/^ghcr\\.io/lochis//',
+        // own images — published by their own CI, not by Renovate
+        '/^(ghcr\\.io|docker\\.io)\\/lochis\\//',
       ],
     },
+    // One PR for every non-major bump — patch, minor, digest re-pin and pin
+    // all together. Previously only `patch` was grouped, so a single image
+    // produced up to three separate PRs (a tag bump plus each digest re-pin).
+    {
+      matchManagers: [
+        'helm-values',
+        'custom.regex',
+      ],
+      matchDatasources: [
+        'docker',
+      ],
+      matchUpdateTypes: [
+        'patch',
+        'minor',
+        'digest',
+        'pin',
+        'pinDigest',
+      ],
+      groupName: 'apps non-major',
+    },
+    // Majors stay one-per-PR and are labelled so they're easy to filter while
+    // triaging — they need a human decision (and often a data migration).
     {
       matchManagers: [
         'helm-values',
         'custom.regex',
       ],
       matchUpdateTypes: [
-        'patch',
+        'major',
       ],
-      groupName: 'apps patch bumps',
+      addLabels: [
+        'major-upgrade',
+      ],
     },
     {
       // Stateful singletons on PVCs: a major bump is a data migration
