@@ -255,8 +255,10 @@ resource "kubernetes_deployment_v1" "panel" {
             value = "database"
           }
           env {
+            # file, not database: the cloned Pterodactyl DB has no `cache` table
+            # and the panel reads the version cache before migrations run.
             name  = "CACHE_STORE"
-            value = "database"
+            value = "file"
           }
           env {
             name  = "QUEUE_CONNECTION"

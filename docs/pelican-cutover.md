@@ -80,6 +80,47 @@ kubectl -n pelican exec deploy/panel -- php artisan db:seed --force
 
 If the wait never ends, the migration failed — read the logs before retrying.
 
+### Known pitfall 1 — `cache` table missing
+
+The entrypoint reads the version cache **before** migrating, and a
+Pterodactyl DB has no `cache` table (Pterodactyl used the file/redis cache).
+The panel crashloops on `Table 'pelican.cache' doesn't exist`. Fixed in the
+module: `CACHE_STORE=file`. `sessions`, `jobs`, `failed_jobs` do exist in a
+Pterodactyl DB, so those drivers stay `database`.
+
+### Known pitfall 2 — `webhook_configurations.scope` (migration ordering bug)
+
+Pelican's model observers fire during migrations: any Node/Role update queries
+`webhook_configurations.scope`, a column only added by a **later** migration
+(`2025_09_26_234340_add_scope_to_webhook_configurations_table`). On a
+Pterodactyl-sourced DB this aborts the run at
+`2025_07_06_213447_match-node-port`. `migrate` is resumable, so apply that later
+migration by hand and mark it applied, then continue:
+
+```bash
+kubectl -n pelican exec deploy/db -- sh -c 'exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" pelican -e "
+ALTER TABLE webhook_configurations
+  ADD COLUMN scope VARCHAR(255) NOT NULL DEFAULT \"global\" AFTER id,
+  ADD COLUMN server_id INT UNSIGNED NULL AFTER scope,
+  ADD INDEX webhook_configurations_scope_server_id_index (scope, server_id),
+  ADD CONSTRAINT webhook_configurations_server_id_foreign FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE;
+INSERT INTO migrations (migration, batch)
+  SELECT \"2025_09_26_234340_add_scope_to_webhook_configurations_table\", MAX(batch) FROM (SELECT batch FROM migrations) t;
+"'
+kubectl -n pelican exec deploy/panel -- php artisan migrate --force   # resumes where it stopped
+```
+
+Re-run `php artisan migrate --force` until it exits 0 with
+`migrate:status` showing no `Pending` rows, then seed.
+
+### DNS
+
+`pelican.vanderloch.com` → Traefik LB is a **Pi-hole** local record
+(`dns.hosts` in `/etc/pihole/pihole.toml`), like every other internal-only
+subdomain. Add it and `pihole restartdns`; clients that already asked while it
+was NXDOMAIN keep the negative answer cached until `ipconfig /flushdns` (or the
+SOA negative TTL expires).
+
 ## 6. Verify the preview
 
 - `https://pelican.vanderloch.com` — login with an existing Pterodactyl account.
