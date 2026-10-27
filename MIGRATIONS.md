@@ -16,7 +16,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | 5 | homeassistant | deploy+PVC+IR | ✅ PR #30 — USB-passthrough pre-check: none exists (plain PVC shape); Recreate kept; PVC 10Gi longhorn | ✅ |
 | 6 | cloudreve | 3 deploys+2 PVC | app+postgres+redis; pin `:latest`s | ⬜ |
 | 7 | n8n | deploy+pg STS+PVC | db in-cluster; secrets via k8s Secret only | ⬜ |
-| 8 | firecrawl | 6 deploys+2 PVC | already digest-pinned (Renovate digest PRs) | ⬜ |
+| 8 | firecrawl | 6 deploys+2 PVC | ✅ PR #32 — firecrawl-secret stays unmanaged (envFrom/secretKeyRef); worker drain windows + playwright securityContext preserved; scrape-verified end-to-end | ✅ |
 | 9 | wyze-bridge | deploy+IR | camera creds — verify secretRef, never inline | ⬜ |
 | 10 | batch: vocard, paloch, omniroute, auto-school | mixed | own images (renovate-disabled) + small PVCs; group as 4 tiny PRs | ⬜ |
 
