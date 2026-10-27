@@ -49,6 +49,15 @@ resource "kubernetes_namespace_v1" "homeassistant" {
   }
 }
 
+resource "kubernetes_namespace_v1" "cloudreve" {
+  metadata {
+    name = "cloudreve"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
+
 resource "kubernetes_namespace_v1" "firecrawl" {
   metadata {
     name = "firecrawl"

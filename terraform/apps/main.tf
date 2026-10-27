@@ -29,6 +29,12 @@ module "homeassistant" {
   namespace = kubernetes_namespace_v1.homeassistant.metadata[0].name
 }
 
+module "cloudreve" {
+  source            = "./modules/cloudreve"
+  namespace         = kubernetes_namespace_v1.cloudreve.metadata[0].name
+  nfs_media_server  = var.nfs_media_server
+}
+
 module "firecrawl" {
   source    = "./modules/firecrawl"
   namespace = kubernetes_namespace_v1.firecrawl.metadata[0].name
