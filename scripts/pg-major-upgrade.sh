@@ -86,6 +86,13 @@ EOF
 )"
   note "waiting for initdb..."
   kubectl -n "$NS" wait --for=condition=Ready "pod/$TMP_POD" --timeout=300s
+  # Ready != listening: the image's initdb runs after container start.
+  for i in $(seq 1 60); do
+    kubectl -n "$NS" exec "$TMP_POD" -- sh -c 'pg_isready -U "$POSTGRES_USER" -q' 2>/dev/null \
+      && { note "pg${TO} accepting connections"; return 0; }
+    sleep 2
+  done
+  echo "pg${TO} never became ready"; exit 1
 }
 
 restore() {
@@ -102,26 +109,27 @@ finish() {
   kubectl -n "$NS" delete pod "$TMP_POD" >/dev/null && note "deleted $TMP_POD (frees the RWO PVC)"
   cat <<EOF
 
-TF EDITS (commit these on a branch, PR, atlantis apply):
+TF EDITS — migration PR (commit, PR, atlantis apply):
   1. terraform/apps/modules/<app>/main.tf, postgres deployment:
        image  "docker.io/library/postgres:${FROM}-alpine"
        ->     "docker.io/library/postgres:${TO}-alpine"
-  2. rename the PVC resource postgres-data -> postgres-data-v${TO}
-     (metadata.name AND the claim_name reference) and change its
-     storage request to match what step 2 created.
-  3. import the pre-created PVC so TF adopts it instead of making another:
-       terraform import module.<app>.kubernetes_persistent_volume_claim_v1.\\
+  2. ADD a new PVC resource postgres_data_v${TO} (name ${NEW_PVC}, same
+     size/class as printed in preflight) — do NOT remove the old one yet!
+     Repoint the deployment's claim_name to it.
+     Removing the old PVC resource in this PR would make the apply DELETE
+     ${OLD_PVC} — killing the revert-PR rollback. Old PVC stays until cleanup.
+  3. adopt the pre-created PVC so TF doesn't fight the live object:
+       terraform import module.<app>.kubernetes_persistent_volume_claim_v1.\
          postgres_data_v${TO} ${NS}/${NEW_PVC}
-     (or let apply create it and skip the import — either way ONE PVC named
-      ${NEW_PVC} must exist at the end; delete duplicates before applying)
 
-AFTER atlantis apply + app verified working:
-  kubectl -n $NS delete pvc $OLD_PVC        # old data (snapshot first!)
-  terraform state rm module.<app>.kubernetes_persistent_volume_claim_v1.postgres_data
-  ...and drop the old PVC resource from HCL in a cleanup PR.
+AFTER atlantis apply + app verified working — cleanup PR:
+  - remove the old postgres_data PVC resource from HCL (state rm first if
+    you want the PVC to survive; plain delete = kubectl deletes it):
+      kubectl -n $NS delete pvc $OLD_PVC   # Longhorn-snapshot first!
+      terraform state rm module.<app>.kubernetes_persistent_volume_claim_v1.postgres_data
 
-Rollback (before deleting $OLD_PVC): revert the PR, atlantis apply, done —
-the old deployment + PVC are untouched until the cleanup PR.
+Rollback (before the cleanup PR): revert the migration PR + atlantis apply —
+old deployment + ${OLD_PVC} were never touched.
 EOF
 }
 
