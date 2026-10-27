@@ -1,5 +1,4 @@
 resource "kubernetes_manifest" "osu_tracker_ir" {
-  force_conflicts = true # take fields from the portainer manager (legacy owner)
   manifest = {
     apiVersion = "traefik.io/v1alpha1"
     kind       = "IngressRoute"
