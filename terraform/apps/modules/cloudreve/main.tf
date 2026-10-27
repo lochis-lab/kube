@@ -55,7 +55,7 @@ resource "kubernetes_deployment_v1" "postgres" {
       spec {
         container {
           name              = "postgres"
-          image             = "docker.io/library/postgres:15-alpine"
+          image             = "docker.io/library/postgres:18-alpine"
           image_pull_policy = "IfNotPresent"
           port {
             container_port = 5432
