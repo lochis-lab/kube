@@ -7,6 +7,29 @@
 #
 # console + metrics ride the standard websecure :443.
 
+# CORS: console is served cross-origin (internal websecure host) while the
+# browser client WSS's to the control plane on :2459. WebSockets need no CORS,
+# but any fetch from the console page does — allow exactly the console origin
+# on headscale's outbound responses (upstream-supported option B from deploy.md).
+resource "kubernetes_manifest" "console_cors" {
+  manifest = {
+    apiVersion = "traefik.io/v1alpha1"
+    kind       = "Middleware"
+    metadata = {
+      name      = "headscale-console-cors"
+      namespace = var.namespace
+    }
+    spec = {
+      headers = {
+        accessControlAllowOriginList  = ["https://headscaleconsole.vanderloch.com"]
+        accessControlAllowHeaders     = ["Authorization", "Content-Type"]
+        accessControlAllowMethods     = ["GET", "POST", "OPTIONS"]
+        addVaryHeader                 = true
+      }
+    }
+  }
+}
+
 resource "kubernetes_manifest" "headscale_ir" {
   field_manager {
     force_conflicts = true # kubectl-client-side-apply also claims these fields
@@ -26,6 +49,9 @@ resource "kubernetes_manifest" "headscale_ir" {
       routes = [{
         kind  = "Rule"
         match = "Host(`headscale.vanderloch.com`)"
+        middlewares = [{
+          name = "headscale-console-cors"
+        }]
         services = [{
           name = "headscale"
           port = 8080

@@ -38,7 +38,7 @@ resource "kubernetes_deployment_v1" "headscale" {
         enable_service_links            = false
         container {
           name              = "headscale"
-          image             = "headscale/headscale:v0.28"
+          image             = "headscale/headscale:v0.29.6"
           command           = ["headscale"]
           args              = ["serve"]
           image_pull_policy = "IfNotPresent"
@@ -69,7 +69,7 @@ resource "kubernetes_deployment_v1" "headscale" {
         }
         container {
           name              = "headscale-console"
-          image             = "ghcr.io/rickli-cloud/headscale-console@sha256:00c82a85a68aaa02a588ce35861e74c14a88aea7522d27ec51afde34be191b1c" # was :latest — digest-pinned at import
+          image             = "ghcr.io/rickli-cloud/headscale-console@sha256:4bdd88593befb32e982d3b44245fd8f06909e4c325d952f02baffc673635d6a7" # 0.7.3 — old :latest digest was a stale pre-static build that 404'd every path
           command           = ["headscale-console"]
           args              = ["serve"]
           image_pull_policy = "IfNotPresent"
