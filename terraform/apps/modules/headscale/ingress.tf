@@ -119,6 +119,10 @@ resource "kubernetes_manifest" "console_ir" {
   }
 }
 
+# websecure :443 — REQUIRED for the browser console: its WS dialer strips the
+# port and connects to the control host on 443 only (upstream deploy.md).
+# Host-only rule catches /ts2021 + everything else; the longer /metrics rule
+# below still wins for metrics → 9090.
 resource "kubernetes_manifest" "metrics_ir" {
   field_manager {
     force_conflicts = true
@@ -135,14 +139,27 @@ resource "kubernetes_manifest" "metrics_ir" {
     }
     spec = {
       entryPoints = ["websecure"]
-      routes = [{
-        kind  = "Rule"
-        match = "Host(`headscale.vanderloch.com`) && PathPrefix(`/metrics`)"
-        services = [{
-          name = "headscale"
-          port = 9090
-        }]
-      }]
+      routes = [
+        {
+          kind  = "Rule"
+          match = "Host(`headscale.vanderloch.com`) && PathPrefix(`/metrics`)"
+          services = [{
+            name = "headscale"
+            port = 9090
+          }]
+        },
+        {
+          kind  = "Rule"
+          match = "Host(`headscale.vanderloch.com`)"
+          middlewares = [{
+            name = "headscale-console-cors"
+          }]
+          services = [{
+            name = "headscale"
+            port = 8080
+          }]
+        },
+      ]
       tls = { secretName = "lochis-tls" }
     }
   }
