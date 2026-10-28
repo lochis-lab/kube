@@ -174,6 +174,18 @@ resource "helm_release" "pihole" {
       loadBalancerIP = "192.168.10.175"
       type           = "LoadBalancer"
     }
+    # Local split-DNS records → chart renders them into the
+    # my-pihole-custom-dnsmasq ConfigMap `addn-hosts` key. Verified against
+    # chart 2.34.0 templates: 02-custom.conf (addn-hosts=/etc/addn-hosts +
+    # dhcp-option=6) is chart DEFAULT and survives; only addn-hosts fills in.
+    # The CM change flips checksum.config.dnsmasqConfig → pod rolls (~seconds
+    # DNS blip, FTL cache flushes). Records previously lived ONLY in the
+    # PVC's pihole.toml [dns] hosts array (hand-edited) — this makes them
+    # declared + configurable; the toml array gets stripped after cutover
+    # (see PR notes) so there is one source of truth.
+    dnsmasq = {
+      additionalHostsEntries = var.pihole_local_dns
+    }
   })]
 
   wait    = true
