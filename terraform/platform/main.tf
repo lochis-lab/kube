@@ -314,6 +314,22 @@ resource "helm_release" "authentik" {
         }
       }
     }
+  })]
+
+  wait    = true
+  timeout = 300
+
+  # Deliberately NOT set (all default false outside the resource): atomic,
+  # force_update, replace, reuse_values, reset_values, recreate_pods,
+  # upgrade_install, create_namespace, dependency_update, max_history, lint,
+  # verify, disable_webhook, disable_openapi_validation, cleanup_on_fail,
+  # set/set_sensitive/set_list blocks. Any of those could rewrite the live IdP
+  # release on an apply.
+  #
+  # CAUTION: helm provider calls `helm upgrade` on ANY attribute change, so even
+  # touching `timeout` (e.g. raising it to 1800 for a real upgrade) re-runs an
+  # upgrade against the live release. Budget for that deliberately.
+}
 # cert-manager — the cluster's entire TLS trust path. It issues/renews every
 # certificate backing the Traefik routes (wildcard *.vanderloch.com included),
 # so this release keeps running exactly as-is: every field below mirrors the
