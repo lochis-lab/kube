@@ -416,7 +416,7 @@ resource "helm_release" "traefik" {
   namespace  = "traefik"
   repository = "https://helm.traefik.io/traefik"
   chart      = "traefik"
-  version    = "37.4.0"
+  version    = "42.1.3"
 
   # Live user values, verbatim from `helm get values traefik -n traefik`
   # (revision 10, deployed 2026-09-02). Reproduced key-for-key — every entry
@@ -434,14 +434,14 @@ resource "helm_release" "traefik" {
     additionalArguments = [
       "--serversTransport.insecureSkipVerify=true",
       "--log.level=INFO",
+      # moved from globalArguments (chart 38.1.0 removed that root key):
+      # telemetry opt-outs, functionally identical as static args
+      "--global.sendanonymoususage=false",
+      "--global.checknewversion=false",
     ]
     deployment = {
       replicas = 2
     }
-    globalArguments = [
-      "--global.sendanonymoususage=false",
-      "--global.checknewversion=false",
-    ]
     ingressRoute = {
       dashboard = {
         enabled = false
@@ -458,8 +458,11 @@ resource "helm_release" "traefik" {
         exposedPort = 2459
         port        = 2459
         protocol    = "TCP"
-        tls = {
-          enabled = true
+        # chart 38.1+: per-port `tls` moved under `http.tls`
+        http = {
+          tls = {
+            enabled = true
+          }
         }
       }
       outbound2 = {
@@ -469,22 +472,29 @@ resource "helm_release" "traefik" {
         exposedPort = 2460
         port        = 2460
         protocol    = "TCP"
-        tls = {
-          enabled = true
+        http = {
+          tls = {
+            enabled = true
+          }
         }
       }
       web = {
-        redirections = {
-          entryPoint = {
-            permanent = true
-            scheme    = "https"
-            to        = "websecure"
+        # chart 38.1+: `redirections` moved under `http.redirections`
+        http = {
+          redirections = {
+            entryPoint = {
+              permanent = true
+              scheme    = "https"
+              to        = "websecure"
+            }
           }
         }
       }
       websecure = {
-        tls = {
-          enabled = true
+        http = {
+          tls = {
+            enabled = true
+          }
         }
       }
     }
