@@ -36,14 +36,48 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | 18 | authentik | chart + its postgres STS + CRDs; import at exact chart version | ⬜ |
 | 19 | traefik | LAST — carries every route incl. Atlantis's own webhook path | ⬜ |
 
+## Tier 5 — leftover apps & load balancing (from the 2026-11 cluster audit)
+| # | App | Objects | Notes | Status |
+|---|---|---|---|---|
+| 20 | jackett | deploy+svc+PVC+IR | typed module (audiobookshelf pattern: same ns, NFS, lochis-tls); portainer stack 342; MUST digest-pin the `:latest` image + drop `AUTO_UPDATE` (self-mutating pod fights every plan); decide keep-vs-kill first (still the indexer behind audiobookshelf?) | ⬜ |
+| 21 | metallb v0.13.12 | controller+speaker+pool CRs | the ONLY working LB IPAM (kube-vip is CP-VIP-only). Raw manifests, NO helm release → adopt via `helm upgrade --install --take-ownership`, then `terraform import helm_release`; IPAddressPool/L2Advertisement stay typed so allocation policy is reviewable. Upgrade = CRD swap (v1beta1, deprecation warnings already), NOT a values bump. Blast radius = all 15 LB svcs (speaker restart = ARP blip on every LB addr); preserve pihole's allow-shared-ip annotation | ⬜ |
+| 22 | kube-vip v0.8.2 | DaemonSet (3 masters) | control-plane VIP only — keep `svc_enable=false` explicit in values or we grow a third LB implementation. Adopt+import; no-diff import ONLY, never combined with a version bump; owns the API VIP, a bad apply = cluster unreachable | ⬜ |
+| 23 | ~~kube-vip-cloud-provider~~ | — | 🗑 not a migration: broken duplicate LB path (empty config CM; "no address pools could be found" events firing every ~2 min per LB svc). Remove via the k3s manifest path or it gets recreated | 🗑 |
+
+## Tier 6 — storage & rancher stack (preconditions + schedule windows)
+| # | App | Objects | Notes | Status |
+|---|---|---|---|---|
+| 24 | longhorn v1.9.2 | full system | BLOCKED until a backup target is configured AND one restore proven (owns 35/35 PVCs; zero restore path today — backuptarget empty, snapshots not readyToUse). Adopt via `--take-ownership` chart, never typed (CSI + webhooks + 40+ CRDs). Fix the two-default-StorageClasses bug in its own PR first; upgrades ride longhorn's own engine-drain path — TF must not force manager restarts | ⬜ |
+| 25 | rancher 2.14.0 | helm release | any diff restarts 3 replicas (UI/API outage); never let a plan regenerate its bootstrap/tls secrets. Fleet is idle (0 GitRepos, only fleet-agent-local) — keep-rancher-vs-shed-it is a separate owner decision (import ≠ endorsement) | ⬜ |
+| 26 | rancher-webhook | helm release | import WITH rancher; apply sequence inside the tier: SUC → webhook → fleet → rancher | ⬜ |
+| 27 | system-upgrade-controller | helm release | THE node-upgrade mechanism (k3s master/worker Plans) — genuinely load-bearing; never roll while a Plan is executing; running image v0.19.0 vs chart appVersion drift noted | ⬜ |
+| 28 | fleet + fleet-crd | helm releases | with rancher; fleet-agent-local / rancher-turtles / CAPI stay unmanaged (chart-generated pseudo-versions, zero usage) | ⬜ |
+
+## Tier 7 — self-import
+| # | App | Objects | Notes | Status |
+|---|---|---|---|---|
+| 29 | atlantis 6.16.2 | helm_release | values already live in `helm/atlantis/values.yaml` (its own TODO). The apply modifies the applier: plan locally, prove No changes, single quiet-window apply, verify /healthz before any further commands. ops tfstate Secrets/Leases stay backend-owned, never TF-managed | ⬜ |
+
+## Hygiene quick wins (tiny PRs, no imports — from the 2026-11 audit)
+- StorageClass: drop `local-path`'s default-class annotation (two default SCs = latent scheduling trap)
+- Delete the duplicate `paloch-web` IngressRoute in ns `traefik` (the real one lives in ns `paloch`)
+- Trim reflector's allowed/auto namespace lists — `pi-omni` and `micro-transcribe` are long gone
+- quickticket #13: the PV (not the PVC) is the poisoned object — marked-for-deletion PV → 10k+ FailedAttachVolume events → prod PG ContainerCreating for a month. Fix: drop the pvc-protection finalizer, let the PV finish deleting, let the deployment re-provision (old prod data already unrecoverable; PR #70 has the analysis)
+
 ## Decommission candidates (do NOT migrate)
 - default ns playground: lavalink, mongo, mongo-express
 - udpTest (test junk) · valheim/ (manifests exist, nothing deployed)
 - micro-transcribe + pi-omni — user confirmed 2026-11: not staying; decommission workloads when convenient
 - wyze-bridge — user confirmed 2026-10-27: moved from Tier 2 #9; do NOT migrate, decommission when convenient
-- portainer — overlaps Atlantis; decommission after tier 4 stabilizes
+- portainer — overlaps Atlantis; decommission after tier 4 stabilizes (3 LB svcs + mongo duplicate + 16Gi PVCs still held; it is also the origin of most unmanaged objects above — migrate/delete those first so its stack records aren't the only provenance)
 - kubero-managed apps (aerosol, rockywestprod) stay kubero's problem
-- rancher stack / longhorn / kube-vip / coredns: hands-off forever (own upgrade paths)
+- snap-camera + snap-camera-server — nothing deployed, but an IR still publishes a third-party host with a cert Ready=False for 282d: kill the IR first (only live exposure), then the namespaces
+- ns `aerosol` orphan bits — LB svc with NO endpoints, an IR for it, and stray secrets/tls; the real app lives in kubero's aerosol-production
+- empty namespaces: `seafile`, `valheim` (nothing but kube-root-ca.crt)
+- orphan PVCs (~14Gi): `audiobookshelf/audiobookshelf-config` + `audiobookshelf-metadata` (superseded by abs-*), `default/vocard-pvc`, `portainer/vocard-pvc`; plus orphaned vocard CMs/Secret in `default`
+- duplicate mongo pair in ns `portainer` (portainer stack 345 — degenerate copy of the default-ns playground stack)
+- kube-vip-cloud-provider — see tier 5 #23
+- coredns + other k3s-packaged bits (metrics-server, local-path-provisioner): hands-off forever — k3s rewrites them on every upgrade; custom DNS goes in coredns custom override files, not TF. (rancher/longhorn/kube-vip moved OUT of hands-off into tiers 5–6 per the 2026-11 audit)
 
 ## Rules (baked from the audiobookshelf incident)
 1. Explicit `metadata.namespace` in every manifest.
