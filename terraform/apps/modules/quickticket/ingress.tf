@@ -52,7 +52,12 @@ resource "kubernetes_manifest" "postgres_dev_irtcp" {
       }]
       tls = {
         secretName = "aerosol-tls"
-        options    = "${var.namespace}/quickticket-alpn@kubernetescrd"
+        # this cluster's traefik CRD types `options` as an object, not the
+        # "ns/name@kubernetescrd" string form
+        options = {
+          name      = "quickticket-alpn"
+          namespace = var.namespace
+        }
       } # valid *.aerosol.dev wildcard, Reflector-reflected into this ns
     }
   }
@@ -81,7 +86,10 @@ resource "kubernetes_manifest" "redis_dev_irtcp" {
       tls = {
         secretName = "aerosol-tls"
         # same option: harmless for redis (redis-py offers no ALPN)
-        options = "${var.namespace}/quickticket-alpn@kubernetescrd"
+        options = {
+          name      = "quickticket-alpn"
+          namespace = var.namespace
+        }
       } # valid *.aerosol.dev wildcard, Reflector-reflected into this ns
     }
   }
