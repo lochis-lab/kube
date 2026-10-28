@@ -129,3 +129,12 @@ resource "kubernetes_namespace_v1" "pelican" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "quickticket" {
+  metadata {
+    name = "quickticket"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}

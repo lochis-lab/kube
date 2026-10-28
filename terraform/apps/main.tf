@@ -70,6 +70,13 @@ module "headscale" {
   namespace = kubernetes_namespace_v1.headscale.metadata[0].name
 }
 
+# Prod Postgres stack intentionally not managed yet (stuck Terminating PVC) —
+# see module header + PR body.
+module "quickticket" {
+  source    = "./modules/quickticket"
+  namespace = kubernetes_namespace_v1.quickticket.metadata[0].name
+}
+
 # Replaces pterodactyl (ns pterodactyl stays live until the wings cutover).
 module "pelican" {
   source    = "./modules/pelican"
