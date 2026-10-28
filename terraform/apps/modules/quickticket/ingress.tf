@@ -10,8 +10,12 @@ resource "kubernetes_manifest" "postgres_dev_irtcp" {
     apiVersion = "traefik.io/v1alpha1"
     kind       = "IngressRouteTCP"
     metadata = {
-      name      = "qt-postgres-dev-tcp"
+      name      = "quickticket-postgres-dev"
       namespace = var.namespace
+      annotations = {
+        # traefik's CRD provider only watches resources with this class
+        "kubernetes.io/ingress.class" = "traefik-external"
+      }
     }
     spec = {
       entryPoints = ["outbound"]
@@ -32,8 +36,11 @@ resource "kubernetes_manifest" "redis_dev_irtcp" {
     apiVersion = "traefik.io/v1alpha1"
     kind       = "IngressRouteTCP"
     metadata = {
-      name      = "qt-redis-dev-tcp"
+      name      = "quickticket-redis-dev"
       namespace = var.namespace
+      annotations = {
+        "kubernetes.io/ingress.class" = "traefik-external"
+      }
     }
     spec = {
       entryPoints = ["outbound"]
