@@ -5,6 +5,30 @@
 # backend services are plaintext; clients use sslmode=require / non-verifying
 # TLS, which is how the originals worked).
 
+# TLSOption accepting libpq's ALPN offer. libpq >= 17 always advertises
+# "postgresql" in the ClientHello; Traefik's TLS terminator rejects unknown
+# ALPN with `no_application_protocol` unless a TLSOption lists it. The
+# original stack had exactly this (user: "it was some middleware, some alpn
+# or something") — it died with the ns and is reconstructed here. Clients
+# that offer no ALPN (DBeaver/pgjdbc, openssl, redis-py) are unaffected.
+
+resource "kubernetes_manifest" "postgres_alpn_tlsoption" {
+  manifest = {
+    apiVersion = "traefik.io/v1alpha1"
+    kind       = "TLSOption"
+    metadata = {
+      name      = "quickticket-alpn"
+      namespace = var.namespace
+      annotations = {
+        "kubernetes.io/ingress.class" = "traefik-external"
+      }
+    }
+    spec = {
+      alpnProtocols = ["postgresql"]
+    }
+  }
+}
+
 resource "kubernetes_manifest" "postgres_dev_irtcp" {
   manifest = {
     apiVersion = "traefik.io/v1alpha1"
@@ -26,7 +50,15 @@ resource "kubernetes_manifest" "postgres_dev_irtcp" {
           port = 5432
         }]
       }]
-      tls = { secretName = "aerosol-tls" } # valid *.aerosol.dev wildcard, Reflector-reflected into this ns
+      tls = {
+        secretName = "aerosol-tls"
+        # this cluster's traefik CRD types `options` as an object, not the
+        # "ns/name@kubernetescrd" string form
+        options = {
+          name      = "quickticket-alpn"
+          namespace = var.namespace
+        }
+      } # valid *.aerosol.dev wildcard, Reflector-reflected into this ns
     }
   }
 }
@@ -51,7 +83,14 @@ resource "kubernetes_manifest" "redis_dev_irtcp" {
           port = 6379
         }]
       }]
-      tls = { secretName = "aerosol-tls" } # valid *.aerosol.dev wildcard, Reflector-reflected into this ns
+      tls = {
+        secretName = "aerosol-tls"
+        # same option: harmless for redis (redis-py offers no ALPN)
+        options = {
+          name      = "quickticket-alpn"
+          namespace = var.namespace
+        }
+      } # valid *.aerosol.dev wildcard, Reflector-reflected into this ns
     }
   }
 }
