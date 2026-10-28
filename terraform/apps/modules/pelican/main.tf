@@ -169,7 +169,7 @@ resource "kubernetes_deployment_v1" "panel" {
         # so Laravel cannot create its storage dirs without this.
         init_container {
           name              = "fix-perms"
-          image             = "docker.io/library/busybox:1.37"
+          image             = "docker.io/library/busybox:1.38"
           image_pull_policy = "IfNotPresent"
           command = [
             "sh", "-c",
