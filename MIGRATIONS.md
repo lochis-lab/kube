@@ -33,7 +33,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | 15 | homepage | simple chart, config via CM — 🚧 PR #73: imported `homepage` chart 4.2.0 (OCI `ghcr.io/m0nsterrr/helm-charts`); live release has no CM yet, config is chart/env-side only | 🚧 |
 | 16 | pihole | CLUSTER DNS — apply from inside cluster, verify resolution immediately | ✅ PR #82 — imported (state-push patch: repository + values), plan No changes, dig/svc/pod verified, rev 1 untouched | ✅ |
 | 17 | cert-manager | cert issuance for all routes; import at exact chart version | ✅ PR #83 — imported (state-push patch: repository + values), plan No changes, 3×controller+cainjector+webhook untouched, certs renewing | ✅ |
-| 18 | authentik | chart + its postgres STS + CRDs; import at exact chart version | ⬜ |
+| 18 | authentik | chart + its postgres STS + CRDs; import at exact chart version | ✅ PR #84 — creds → atlantis-app-vars (TF_VAR pattern), atlantis helm upgraded w/ env wiring (chart repo moved to runatlantis.github.io/helm-charts), imported + state-patch + one no-op apply to record sensitive-values marking; plan No changes, pods untouched | ✅ |
 | 19 | traefik | LAST — carries every route incl. Atlantis's own webhook path | ✅ PR #85 — imported (state-push patch: repository + values), plan No changes, pods/routes/atlantis untouched | ✅ |
 
 ## Tier 5 — leftover apps & load balancing (from the 2026-11 cluster audit)
