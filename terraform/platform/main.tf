@@ -200,3 +200,59 @@ resource "helm_release" "pihole" {
   # (pihole.vanderloch.com, unmanaged sibling created a day after the install),
   # ns `default` itself, and the longhorn PVC the chart template owns.
 }
+
+# cert-manager — the cluster's entire TLS trust path. It issues/renews every
+# certificate backing the Traefik routes (wildcard *.vanderloch.com included),
+# so this release keeps running exactly as-is: every field below mirrors the
+# LIVE release (chart cert-manager v1.19.1, Helm revision 24, deployed
+# 2025-11-05T16:58:27Z) so a post-merge import yields a no-op plan.
+#
+# IMPORTANT: import must pin the EXACT chart version currently live (v1.19.1).
+# The release is at revision 24 after many upgrades; importing "latest" would
+# rewrite the live release on the next apply.
+#
+# Import (helm_release ID is namespace/name):
+#   terraform import helm_release.cert_manager cert-manager/cert-manager
+# then check state's `repository`: helm provider import can leave it empty
+# (same quirk as the homepage import) — patch it to
+# https://charts.jetstack.io if the plan shows a repository-only diff.
+#
+# NOT managed here: the 6 cert-manager CRDs (chart has installCRDs=false and
+# crds.enabled=false, so they are cluster-installed and unowned-by-Helm), the
+# ClusterIssuer `letsencrypt-production`, and the ns (pre-exists, Rancher-owned).
+resource "helm_release" "cert_manager" {
+  name       = "cert-manager"
+  namespace  = "cert-manager"
+  repository = "https://charts.jetstack.io"
+  chart      = "cert-manager"
+  version    = "v1.19.1"
+
+  # Live user values verbatim (`helm get values cert-manager -n cert-manager`),
+  # reproduced key-for-key. Do not "tidy" this: the podDnsPolicy=None +
+  # podDnsConfig.nameservers pair and the two DNS01 extraArgs are what let
+  # ACME HTTP01/DNS01 validation work from this network, and replicaCount=3 is
+  # the live controller HA setting.
+  values = [yamlencode({
+    extraArgs = [
+      "--dns01-recursive-nameservers=1.1.1.1:53,9.9.9.9:53",
+      "--dns01-recursive-nameservers-only",
+    ]
+    installCRDs = false
+    podDnsConfig = {
+      nameservers = ["1.1.1.1", "9.9.9.9"]
+    }
+    podDnsPolicy = "None"
+    replicaCount = 3
+  })]
+
+  # Mirrors the reflector release: the chart ships a startupapicheck Job, so we
+  # wait for readiness the same way the live install did.
+  wait    = true
+  timeout = 300
+
+  # Deliberately NOT set (all default false outside the resource): atomic,
+  # force_update, replace, reuse_values, reset_values, recreate_pods,
+  # upgrade_install, create_namespace, dependency_update, max_history,
+  # cleanup_on_fail. Any of those could rewrite the live release on an apply;
+  # a non-empty plan here means drift, not a to-do.
+}
