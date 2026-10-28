@@ -22,7 +22,7 @@ resource "kubernetes_manifest" "postgres_dev_irtcp" {
           port = 5432
         }]
       }]
-      tls = {} # terminate with Traefik's default cert
+      tls = { secretName = "aerosol-tls" } # valid *.aerosol.dev wildcard, Reflector-reflected into this ns
     }
   }
 }
@@ -44,7 +44,7 @@ resource "kubernetes_manifest" "redis_dev_irtcp" {
           port = 6379
         }]
       }]
-      tls = {} # terminate with Traefik's default cert
+      tls = { secretName = "aerosol-tls" } # valid *.aerosol.dev wildcard, Reflector-reflected into this ns
     }
   }
 }
