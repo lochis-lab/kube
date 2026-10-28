@@ -82,7 +82,7 @@ resource "kubernetes_deployment_v1" "postgres_dev" {
         enable_service_links            = false # matches live
         container {
           name              = "postgres"
-          image             = "postgres:18.4-alpine" # live tag kept as-is
+          image             = "postgres:18.6-alpine" # live tag kept as-is
           image_pull_policy = "IfNotPresent"
           port {
             name           = "pg"
@@ -205,7 +205,7 @@ resource "kubernetes_deployment_v1" "postgres_prod" {
         enable_service_links            = false
         container {
           name              = "postgres"
-          image             = "postgres:18.4-alpine" # same as dev
+          image             = "postgres:18.6-alpine" # same as dev
           image_pull_policy = "IfNotPresent"
           port {
             name           = "pg"
@@ -306,7 +306,7 @@ resource "kubernetes_deployment_v1" "redis_dev" {
         enable_service_links            = false # matches live
         container {
           name              = "redis"
-          image             = "redis:8.2.9-alpine" # live tag kept as-is
+          image             = "redis:8.10.3-alpine" # live tag kept as-is
           image_pull_policy = "IfNotPresent"
           # requirepass comes from the env var below (secret-ref only).
           command = ["redis-server", "--requirepass", "$(REDIS_PASSWORD)", "--appendonly", "yes"]
@@ -395,7 +395,7 @@ resource "kubernetes_deployment_v1" "redis_prod" {
         enable_service_links            = false # matches live
         container {
           name              = "redis"
-          image             = "redis:8.2.9-alpine" # live tag kept as-is
+          image             = "redis:8.10.3-alpine" # live tag kept as-is
           image_pull_policy = "IfNotPresent"
           command           = ["redis-server", "--requirepass", "$(REDIS_PASSWORD)", "--appendonly", "yes"]
           port {
