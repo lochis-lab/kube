@@ -158,6 +158,129 @@ resource "kubernetes_service_v1" "postgres_dev" {
   }
 }
 
+# --- Postgres (prod, RECREATED — see PR notes) ---------------------------
+# Incident note: the original quickticket-postgres-prod deployment + PVC were
+# wedged for a month+ (PV marked-for-deletion poisoned every attach; backing
+# Longhorn volume already gone → old prod data was unrecoverable). The stuck
+# objects were destroyed (cascade) when a main-based terraform-apps apply
+# wiped the out-of-band imports, taking the whole namespace with them.
+# This whole module is now CREATE-from-scratch: no imports, fresh volumes,
+# prod PG included. 10Gi like the original PVC.
+
+resource "kubernetes_persistent_volume_claim_v1" "pgdata_prod" {
+  metadata {
+    name      = "quickticket-pgdata-prod"
+    namespace = var.namespace
+  }
+  spec {
+    access_modes       = ["ReadWriteOnce"]
+    storage_class_name = "longhorn"
+    resources {
+      requests = { storage = "10Gi" } # matches the original PVC
+    }
+  }
+}
+
+resource "kubernetes_deployment_v1" "postgres_prod" {
+  metadata {
+    name      = "quickticket-postgres-prod"
+    namespace = var.namespace
+    labels    = { app = "quickticket-postgres-prod" }
+  }
+  spec {
+    # Recreate: single replica on an RWO Longhorn PVC (surge pods multi-attach).
+    replicas = 1
+    strategy {
+      type = "Recreate"
+    }
+    selector {
+      match_labels = { app = "quickticket-postgres-prod" }
+    }
+    template {
+      metadata {
+        labels = { app = "quickticket-postgres-prod" }
+      }
+      spec {
+        automount_service_account_token = false
+        enable_service_links            = false
+        container {
+          name              = "postgres"
+          image             = "postgres:18.4-alpine" # same as dev
+          image_pull_policy = "IfNotPresent"
+          port {
+            name           = "pg"
+            container_port = 5432
+          }
+          env {
+            name  = "POSTGRES_USER"
+            value = "quickticket"
+          }
+          env {
+            name = "POSTGRES_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = "quickticket-secret-prod"
+                key  = "POSTGRES_PASSWORD"
+              }
+            }
+          }
+          env {
+            name  = "POSTGRES_DB"
+            value = "quickticket"
+          }
+          env {
+            name  = "PGDATA"
+            value = "/var/lib/postgresql/data/pgdata"
+          }
+          readiness_probe {
+            exec {
+              command = ["pg_isready", "-U", "quickticket", "-d", "quickticket"]
+            }
+            initial_delay_seconds = 5
+            period_seconds        = 10
+          }
+          liveness_probe {
+            exec {
+              command = ["pg_isready", "-U", "quickticket", "-d", "quickticket"]
+            }
+            initial_delay_seconds = 30
+            period_seconds        = 20
+          }
+          resources {
+            requests = { cpu = "50m", memory = "128Mi" }
+            limits   = { cpu = "500m", memory = "512Mi" }
+          }
+          volume_mount {
+            name       = "pgdata"
+            mount_path = "/var/lib/postgresql/data"
+          }
+        }
+        volume {
+          name = "pgdata"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim_v1.pgdata_prod.metadata[0].name
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service_v1" "postgres_prod" {
+  metadata {
+    name      = "quickticket-postgres-prod"
+    namespace = var.namespace
+  }
+  spec {
+    selector = { app = "quickticket-postgres-prod" }
+    port {
+      name        = "pg"
+      port        = 5432
+      target_port = 5432
+    }
+  }
+}
+
 # --- Redis (dev + prod) ---------------------------------------------------
 
 resource "kubernetes_deployment_v1" "redis_dev" {

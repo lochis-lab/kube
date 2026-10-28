@@ -24,7 +24,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 |---|---|---|---|---|
 | 11 | headscale | deploy+PVC+IR | ✅ PR #60 — 10 objs (ns,deploy,svc,PVC,2×CM,3×IR,IRTCP-gRPC-passthrough); RollingUpdate→Recreate (RWO multi-attach); console :latest→digest; portainer labels off IRTCP; all tailnet nodes re-online after apply. Pre-existing console 404 (controlUrl :2459 vs IR :443 mismatch) NOT fallout | ✅ |
 | 12 | ~~pterodactyl~~ → **pelican** | new ns+db+panel (side-by-side) | ✅ PR #67+#69 — Pelican panel + wings live since 2026-10-27 on a cloned DB (own MariaDB 10.11). Backups verified end-to-end (host↔node mapping + per-server file layout, see `docs/pelican-cutover.md` §7.7). Pterodactyl ns kept for rollback; decommission after ~1 week. | ✅ |
-| 13 | quickticket | 4 deploys+4 PVC+secrets | dev+prod PG/redis pairs | ⬜ |
+| 13 | quickticket | 4 deploys+4 PVC+secrets | 🚧 PR #70 — **INCIDENT 2026-10-28**: a main-based `terraform-apps` apply (#69) destroyed the imported objects + the whole ns (trap: out-of-band imports in shared state + apply from a branch lacking the module = destroys; dev DB/redis data lost, prod data was already unrecoverable). Resolution IN this PR: module is now pure create-from-scratch — ns + dev PG + dev/prod redis + **fresh prod PG (10Gi)**, no imports, no manual PV surgery | 🚧 |
 
 ## Tier 4 — platform helm imports (terraform/platform, helm_release imports)
 | # | Release | Why this order | Status |
