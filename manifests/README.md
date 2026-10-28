@@ -15,20 +15,25 @@ kube-vip is deliberately **not** Terraform-managed (owner decision 2026-10-28; s
 - `svc_enable: "false"` is explicit — kube-vip stays control-plane-only and must NEVER
   grow service LB duties (MetalLB owns that).
 
-## Version bumps (the whole point)
+## Version bumps — DELIBERATE, no cron
 
-1. Edit `image:` in this file → PR → merge
-2. `kube-vip-sync.sh` (cron on master-01, every 30 min) sees the version diff and
-   `sed`s the local manifest
-3. k3s rolls the DS one master at a time; leader election moves the VIP for ~seconds
+kube-vip holds the API VIP; a bad roll = cluster unreachable. So bumps are always a
+human-in-the-loop, eyes-on-rollout event (and rare: v0.8.2 since Oct 2025):
+
+1. Read kube-vip release notes; edit `image:` in this file; PR; merge
+2. On master-01: `sudo /usr/local/scripts/kube-vip-sync.sh`
+   — shows the diff, asks for confirmation, keeps a `.bak`, then k3s rolls the DS
+   (maxUnavailable 1; leader election moves the VIP for ~seconds)
+3. Watch it: `kubectl -n kube-system rollout status ds/kube-vip-ds` + `kubectl get --raw=/readyz`
+4. If it goes wrong: `sudo cp $MANIFEST.bak $MANIFEST` rolls back the file → k3s re-rolls
 
 One-time setup on master-01 (as lochis, passwordless sudo):
 ```
 sudo mkdir -p /usr/local/scripts
-sudo tee /usr/local/scripts/kube-vip-sync.sh < manifests/kube-vip-sync.sh   # from a repo clone
+sudo tee /usr/local/scripts/kube-vip-sync.sh < kube/manifests/kube-vip-sync.sh
 sudo chmod +x /usr/local/scripts/kube-vip-sync.sh
-sudo bash -c '(crontab -l 2>/dev/null; echo "*/30 * * * * /usr/local/scripts/kube-vip-sync.sh") | crontab -'
 ```
+(No crontab entry — that is the point.)
 
 ## Emergency (VIP dead, kubectl times out)
 
