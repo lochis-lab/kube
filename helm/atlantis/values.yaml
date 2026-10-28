@@ -86,3 +86,13 @@ affinity:
       nodeSelectorTerms:
         - matchExpressions:
             - { key: kubernetes.io/hostname, operator: In, values: [k3s-worker-01, k3s-worker-02] }
+  - name: TF_VAR_mongo_root_password
+    secretKeyRef: { name: atlantis-app-vars, key: MONGO_ROOT_PASSWORD }
+  - name: TF_VAR_lavalink_server_password
+    secretKeyRef: { name: atlantis-app-vars, key: LAVALINK_SERVER_PASSWORD }
+  - name: TF_VAR_lavalink_spotify_client_id
+    secretKeyRef: { name: atlantis-app-vars, key: LAVALINK_SPOTIFY_CLIENT_ID }
+  - name: TF_VAR_lavalink_spotify_client_secret
+    secretKeyRef: { name: atlantis-app-vars, key: LAVALINK_SPOTIFY_CLIENT_SECRET }
+  - name: TF_VAR_lavalink_yt_oauth_refresh_token
+    secretKeyRef: { name: atlantis-app-vars, key: LAVALINK_YT_OAUTH_REFRESH_TOKEN }

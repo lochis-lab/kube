@@ -24,3 +24,28 @@ variable "osu_session_secret" {
   description = "osu-tracker session + sync-shared secret"
   sensitive   = true
 }
+
+variable "mongo_root_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "lavalink_server_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "lavalink_spotify_client_id" {
+  type      = string
+  sensitive = true
+}
+
+variable "lavalink_spotify_client_secret" {
+  type      = string
+  sensitive = true
+}
+
+variable "lavalink_yt_oauth_refresh_token" {
+  type      = string
+  sensitive = true
+}
