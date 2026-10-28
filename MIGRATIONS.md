@@ -29,7 +29,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 ## Tier 4 — platform helm imports (terraform/platform, helm_release imports)
 | # | Release | Why this order | Status |
 |---|---|---|---|
-| 14 | reflector | single deploy, nothing depends on it at apply time | ⬜ |
+| 14 | reflector | single deploy, nothing depends on it at apply time | 🚧 PR #71 |
 | 15 | homepage | simple chart, config via CM | ⬜ |
 | 16 | pihole | CLUSTER DNS — apply from inside cluster, verify resolution immediately | ⬜ |
 | 17 | cert-manager | cert issuance for all routes; import at exact chart version | ⬜ |
