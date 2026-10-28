@@ -416,7 +416,7 @@ resource "helm_release" "traefik" {
   namespace  = "traefik"
   repository = "https://helm.traefik.io/traefik"
   chart      = "traefik"
-  version    = "37.4.0"
+  version    = "42.1.3"
 
   # Live user values, verbatim from `helm get values traefik -n traefik`
   # (revision 10, deployed 2026-09-02). Reproduced key-for-key — every entry
