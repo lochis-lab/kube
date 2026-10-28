@@ -80,6 +80,55 @@ kubectl -n pelican exec deploy/panel -- php artisan db:seed --force
 
 If the wait never ends, the migration failed — read the logs before retrying.
 
+### Known pitfall 1 — `cache` table missing
+
+The entrypoint reads the version cache **before** migrating, and a
+Pterodactyl DB has no `cache` table (Pterodactyl used the file/redis cache).
+The panel crashloops on `Table 'pelican.cache' doesn't exist`. Fixed in the
+module: `CACHE_STORE=file`. `sessions`, `jobs`, `failed_jobs` do exist in a
+Pterodactyl DB, so those drivers stay `database`.
+
+### Known pitfall 2 — `webhook_configurations.scope` (migration ordering bug)
+
+Pelican's model observers fire during migrations: any Node/Role update queries
+`webhook_configurations.scope`, a column only added by a **later** migration
+(`2025_09_26_234340_add_scope_to_webhook_configurations_table`). On a
+Pterodactyl-sourced DB this aborts the run at
+`2025_07_06_213447_match-node-port`. `migrate` is resumable, so apply that later
+migration by hand and mark it applied, then continue:
+
+```bash
+kubectl -n pelican exec deploy/db -- sh -c 'exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" pelican -e "
+ALTER TABLE webhook_configurations
+  ADD COLUMN scope VARCHAR(255) NOT NULL DEFAULT \"global\" AFTER id,
+  ADD COLUMN server_id INT UNSIGNED NULL AFTER scope,
+  ADD INDEX webhook_configurations_scope_server_id_index (scope, server_id),
+  ADD CONSTRAINT webhook_configurations_server_id_foreign FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE;
+INSERT INTO migrations (migration, batch)
+  SELECT \"2025_09_26_234340_add_scope_to_webhook_configurations_table\", MAX(batch) FROM (SELECT batch FROM migrations) t;
+"'
+kubectl -n pelican exec deploy/panel -- php artisan migrate --force   # resumes where it stopped
+```
+
+Re-run `php artisan migrate --force` until it exits 0 with
+`migrate:status` showing no `Pending` rows, then seed.
+
+### Known pitfall 3 — storage not writable (`Unable to create a directory at /var/www/html/storage/app/public`)
+
+The panel runs as `www-data` (uid 82) and `storage/app/public` is a symlink to
+`/pelican-data/storage`, but the Longhorn PVC comes up `root:root` — so Laravel
+cannot create its storage dirs. The module ships a root `fix-perms` initContainer
+that `chown -R 82:82`s `/pelican-data` before the panel starts. Symptom without
+it: login page renders, then every view that touches storage throws.
+
+### DNS
+
+`pelican.vanderloch.com` → Traefik LB is a **Pi-hole** local record
+(`dns.hosts` in `/etc/pihole/pihole.toml`), like every other internal-only
+subdomain. Add it and `pihole restartdns`; clients that already asked while it
+was NXDOMAIN keep the negative answer cached until `ipconfig /flushdns` (or the
+SOA negative TTL expires).
+
 ## 6. Verify the preview
 
 - `https://pelican.vanderloch.com` — login with an existing Pterodactyl account.
@@ -89,22 +138,175 @@ If the wait never ends, the migration failed — read the logs before retrying.
 - Nodes and servers appear **offline** — expected, wings still points at the
   Pterodactyl panel. Panel-side config editing works.
 
-## 7. Cutover (per node — the `wings` half)
+## 7. Cutover — node `wings.vanderloch.com` (192.168.10.18)
 
-For each node, after a final fresh dump+restore (step 4) so the preview is current:
+The one node: `daemonListen 27015`, SFTP `2022`, data root
+`/var/lib/pterodactyl/volumes`, `scheme https`, `behind_proxy 0`.
+Servers: Valheim (2456), Hytale (2458, suspended), V Rising (25565),
+Vintage Story (2457) — all on `192.168.10.18`.
+
+**World files are not copied or converted.** They are plain docker volumes under
+the wings data root; only wings addresses them, and wings keeps using the same
+path (`system.data` stays `/var/lib/pterodactyl/volumes`). Nothing about Pelican
+requires the `/var/lib/pelican` path — it is config-driven. Rename later in a
+maintenance window if the naming bothers you (`mv` on the same filesystem, then
+update `system.data`).
+
+### 7.1 Pre-flight (read-only, no changes)
 
 ```bash
-sudo systemctl stop wings
-sudo curl -fsSL -o /usr/local/bin/wings \
-  "https://github.com/pelican/wings/releases/latest/download/wings_linux_amd64"
-sudo chmod +x /usr/local/bin/wings
-sudo mkdir -p /etc/pelican
-sudo cp /etc/pterodactyl/config.yml /etc/pelican/config.yml
-# update /etc/systemd/system/wings.service: WorkingDirectory=/etc/pelican
-sudo systemctl daemon-reload && sudo systemctl start wings
+ssh root@192.168.10.18
+systemctl status wings --no-pager
+/usr/local/bin/wings --version
+sed -n '1,40p' /etc/pterodactyl/config.yml     # note remote:, data:, sftp bind_port
+df -h /var/lib/pterodactyl
+docker ps --format '{{.Names}}\t{{.Status}}'
+getent hosts pelican.vanderloch.com            # must be 192.168.10.170
+curl -sI https://pelican.vanderloch.com/login | head -3
 ```
 
-Then disable the Pterodactyl panel route so nobody writes to the old DB.
+Stop if the node cannot resolve `pelican.vanderloch.com` (its DNS must be
+Pi-hole, or the record must exist upstream) — wings talks to the panel by name,
+and the TLS cert is `*.vanderloch.com`.
+
+### 7.2 Backups on the node
+
+```bash
+cp -a /etc/pterodactyl /root/pterodactyl-etc-$(date +%F)
+cp -a /usr/local/bin/wings /root/wings-pterodactyl-$(date +%F)
+du -sh /var/lib/pterodactyl/volumes/* > /root/volumes-sizes-$(date +%F).txt
+```
+
+The panel DB dump already exists (`backups/pterodactyl-panel-pre-pelican-*.sql`).
+
+### 7.3 Quiesce
+
+Stop the running servers from the **Pterodactyl** panel (Valheim, V Rising,
+Vintage Story) and let them reach "offline" so the worlds flush. Hytale stays
+suspended.
+
+### 7.4 Swap wings
+
+```bash
+systemctl stop wings
+curl -fsSL -o /usr/local/bin/wings \
+  "https://github.com/pelican/wings/releases/latest/download/wings_linux_amd64"
+chmod +x /usr/local/bin/wings
+mkdir -p /etc/pelican
+cp /etc/pterodactyl/config.yml /etc/pelican/config.yml
+sed -i 's|^remote:.*|remote: https://pelican.vanderloch.com|' /etc/pelican/config.yml
+# /etc/systemd/system/wings.service: WorkingDirectory=/etc/pelican (ExecStart unchanged)
+systemctl daemon-reload
+systemctl start wings
+journalctl -u wings -f
+```
+
+Node `uuid`/`token_id`/`token` in the config are unchanged and still valid —
+Pelican's node row came from the clone.
+
+### 7.4b Actual host layout — wings runs in **Docker**, not systemd
+
+`192.168.10.18` (`wings-game-server-backup`) has no `/usr/local/bin/wings`; wings
+is a container (`wings-wings-1`) from
+`/home/lochis/pterodactyl/wings/docker-compose.yml`. SSH: `root` is refused
+(cloud-init) — log in as `lochis`, passwordless sudo. The host itself cannot
+resolve `*.vanderloch.com`; the container has `dns: [192.168.10.166, 8.8.8.8]`
+(Pi-hole), which is why wings could always reach the panel.
+
+The swap that was actually performed (no systemd, no binary in `/usr/local/bin`):
+
+```bash
+# backups
+cp -a /home/lochis/pterodactyl/wings/docker-compose.yml /root/wings-compose-<ts>.yml
+cp -a /etc/pterodactyl /root/pterodactyl-etc-<ts>
+tar -czf /root/valheim-<ts>.tar.gz -C /var/lib/pterodactyl/volumes e33a887d-…
+
+# config
+mkdir -p /etc/pelican
+cp /etc/pterodactyl/config.yml /etc/pelican/config.yml
+sed -i 's|^remote:.*|remote: https://pelican.vanderloch.com|' /etc/pelican/config.yml
+# allowed_origins: []  -> list https://pelican.vanderloch.com (websocket CheckOrigin
+# compares the browser Origin against `remote`; empty list + a mismatching/absent
+# Origin gives "websocket: request origin not allowed by Upgrader.CheckOrigin" 403)
+
+# compose edits: image ghcr.io/pelican/wings:<digest>, mount /etc/pelican instead of
+# /etc/pterodactyl, WINGS_USERNAME=pelican. Data mounts stay /var/lib/pterodactyl
+# (config's system.data/root_directory/backup_directory all point there).
+docker compose up -d && docker compose restart   # restart needed to reload config
+```
+
+Wings then logs `processing servers returned by the API total_configs=4`, loads
+all four servers and starts SFTP on 2022 / API on 27015. The Pelican image is
+distroless — no shell inside the container, logs only.
+
+### 7.5 Verify in Pelican
+
+- Node shows online/connected in Admin → Nodes.
+- 4 servers listed with their allocations; Hytale still suspended.
+- Start Vintage Story → console streams, connect on 2457, SFTP on 2022 works.
+- Check a server's file manager lists the world directory (nothing re-created).
+
+### 7.6 Rollback (any time in week 1)
+
+```bash
+systemctl stop wings
+cp /root/wings-pterodactyl-<date> /usr/local/bin/wings
+sed -i 's|^remote:.*|remote: https://pterodactyl.vanderloch.com|' /etc/pterodactyl/config.yml
+# unit WorkingDirectory=/etc/pterodactyl
+systemctl daemon-reload && systemctl start wings
+```
+
+Pterodactyl's panel + DB are untouched, so the old panel still has all its data.
+Anything created or changed in Pelican after the swap does not exist there.
+
+## 7.7 Backups — what the migration does *not* do for you
+
+Two things are not carried over, and both fail quietly:
+
+**a) The backup host must be attached to the node.** Pelican keeps backup
+destinations in `backup_hosts` (`schema: wings` = the node's local
+`backup_directory`) and links them to nodes through `backup_host_node`. The
+migration creates the host and re-points the existing backup rows, but leaves
+`backup_host_node` **empty**, so `InitiateBackupService` has no host for the
+server's node and new backups can't be created. Fix (mirrors the admin UI):
+
+```sql
+insert into backup_host_node (node_id, backup_host_id, created_at, updated_at)
+values (<node_id>, <backup_host_id>, now(), now());
+```
+
+**b) Pelican stores backups per server, Pterodactyl stored them flat.** Wings'
+adapter path is
+`<backup_directory>/<server_uuid>/<backup_uuid>.tar.gz`, so every pre-migration
+tarball sitting directly in `backup_directory` becomes a 404 (download, delete
+and restore all fail) even though its row looks fine. Relocate them:
+
+```sql
+-- one line per backup, on the node:
+-- mv $B/<backup_uuid>.tar.gz $B/<server_uuid>/<backup_uuid>.tar.gz
+select concat(b.uuid,' ',s.uuid) from backups b join servers s on s.id=b.server_id;
+```
+
+Verify by diffing the DB against the filesystem — every `backups.uuid` must have
+`<server_uuid>/<uuid>.tar.gz`, and every file should have a row (a row deleted
+while the file was still flat leaves an orphan tarball behind).
+
+Sanity check of the whole path (this is what "backups work" means):
+
+```
+wings: creating backup ... path=/var/lib/pterodactyl/backups/<server>/<backup>.tar.gz
+wings: created backup successfully
+wings: notified panel of successful backup state
+DB:    is_successful=1, bytes>0, completed_at set
+```
+
+`servers.backup_limit` (10 here) is enforced on scheduled backups by deleting the
+oldest **unlocked** backup first.
+
+Known non-blocking issues seen right after the cutover: `RevokeSftpAccessJob`
+fails with `Typed property DaemonRepository::$server must not be accessed before
+initialization` (Pelican bug, one failed job per occurrence), and mail is still
+unconfigured — the inherited `MAIL_HOST=mail:1025` never existed.
 
 ## 8. After the cutover
 
