@@ -10,7 +10,7 @@ resource "helm_release" "reflector" {
   namespace  = "reflector"
   repository = "https://emberstack.github.io/helm-charts"
   chart      = "reflector"
-  version    = "10.0.69"
+  version    = "10.0.70"
 
   # Live release runs on chart defaults (helm get values -> null), so no values
   # are declared here on purpose.
