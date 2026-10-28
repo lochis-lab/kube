@@ -23,7 +23,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | # | App | Objects | Notes | Status |
 |---|---|---|---|---|
 | 11 | headscale | deploy+PVC+IR | ✅ PR #60 — 10 objs (ns,deploy,svc,PVC,2×CM,3×IR,IRTCP-gRPC-passthrough); RollingUpdate→Recreate (RWO multi-attach); console :latest→digest; portainer labels off IRTCP; all tailnet nodes re-online after apply. Pre-existing console 404 (controlUrl :2459 vs IR :443 mismatch) NOT fallout | ✅ |
-| 12 | ~~pterodactyl~~ → **pelican** | new ns+db+panel (side-by-side) | ⬜ PR pending — Pelican panel runs beside Pterodactyl on a **cloned** DB (new MariaDB 10.11; Pterodactyl's 10.5 too old for Pelican, and Pelican's migration is an in-place schema upgrade). See `docs/pelican-cutover.md`. Wings cutover is manual per node. | ⬜ |
+| 12 | ~~pterodactyl~~ → **pelican** | new ns+db+panel (side-by-side) | ✅ PR #67+#69 — Pelican panel + wings live since 2026-10-27 on a cloned DB (own MariaDB 10.11). Backups verified end-to-end (host↔node mapping + per-server file layout, see `docs/pelican-cutover.md` §7.7). Pterodactyl ns kept for rollback; decommission after ~1 week. | ✅ |
 | 13 | quickticket | 4 deploys+4 PVC+secrets | dev+prod PG/redis pairs | ⬜ |
 
 ## Tier 4 — platform helm imports (terraform/platform, helm_release imports)
