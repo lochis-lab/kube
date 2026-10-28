@@ -253,7 +253,7 @@ resource "helm_release" "authentik" {
   namespace  = "authentik"
   repository = "https://charts.goauthentik.io"
   chart      = "authentik"
-  version    = "2026.8.3"
+  version    = "2026.8.5"
 
   # Live user values, reproduced key-for-key (`helm get values authentik -n
   # authentik`). The four credentials are injected from sensitive root vars
