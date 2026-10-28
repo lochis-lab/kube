@@ -65,7 +65,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 - quickticket #13: the PV (not the PVC) is the poisoned object — marked-for-deletion PV → 10k+ FailedAttachVolume events → prod PG ContainerCreating for a month. Fix: drop the pvc-protection finalizer, let the PV finish deleting, let the deployment re-provision (old prod data already unrecoverable; PR #70 has the analysis)
 
 ## Decommission candidates (do NOT migrate)
-- default ns playground: lavalink, mongo, mongo-express
+- ~~default ns playground: lavalink, mongo, mongo-express~~ **RESOLVED 2026-11-28**: audit verdict overturned by live evidence — mongo (osu-tracker DB) + lavalink (vocard-dashboard web player, Client [WEB] in logs) were load-bearing. Both ADOPTED into TF (modules/mongo in ns default; modules/lavalink recreated in ns vocard with VIP .163 + ExternalName alias preserved). mongo-express: DELETED (crashlooped 74×, no users). Leftover: `financial-planner` DB (732K, no in-cluster owner) — VIP .160 stays until its fate is decided; `Aerosol` DB = dead data, drop when convenient
 - udpTest (test junk) · valheim/ (manifests exist, nothing deployed)
 - micro-transcribe + pi-omni — user confirmed 2026-11: not staying; decommission workloads when convenient
 - wyze-bridge — user confirmed 2026-10-27: moved from Tier 2 #9; do NOT migrate, decommission when convenient

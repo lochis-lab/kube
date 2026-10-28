@@ -50,6 +50,25 @@ module "paloch" {
   namespace = kubernetes_namespace_v1.paloch.metadata[0].name
 }
 
+# Adopted in place from portainer stack 192 (import ceremony — see PR body).
+# Stays in ns default: consumer is osu-tracker (svc DNS).
+module "mongo" {
+  source         = "./modules/mongo"
+  namespace      = "default"
+  root_password  = var.mongo_root_password
+}
+
+# Recreated in ns vocard (was default, portainer stack 363) — cutover runbook
+# in the PR: delete old default-ns lavalink BEFORE apply (alias name clash).
+module "lavalink" {
+  source                 = "./modules/lavalink"
+  namespace              = kubernetes_namespace_v1.vocard.metadata[0].name
+  password               = var.lavalink_server_password
+  spotify_client_id      = var.lavalink_spotify_client_id
+  spotify_client_secret  = var.lavalink_spotify_client_secret
+  yt_oauth_refresh_token = var.lavalink_yt_oauth_refresh_token
+}
+
 module "vocard" {
   source    = "./modules/vocard"
   namespace = kubernetes_namespace_v1.vocard.metadata[0].name
