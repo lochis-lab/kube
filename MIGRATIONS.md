@@ -30,7 +30,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | # | Release | Why this order | Status |
 |---|---|---|---|
 | 14 | reflector | single deploy, nothing depends on it at apply time | 🚧 PR #71 |
-| 15 | homepage | simple chart, config via CM | ⬜ |
+| 15 | homepage | simple chart, config via CM — 🚧 PR #73: imported `homepage` chart 4.2.0 (OCI `ghcr.io/m0nsterrr/helm-charts`); live release has no CM yet, config is chart/env-side only | 🚧 |
 | 16 | pihole | CLUSTER DNS — apply from inside cluster, verify resolution immediately | ⬜ |
 | 17 | cert-manager | cert issuance for all routes; import at exact chart version | ⬜ |
 | 18 | authentik | chart + its postgres STS + CRDs; import at exact chart version | ⬜ |

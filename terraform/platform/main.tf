@@ -121,4 +121,7 @@ resource "helm_release" "homepage" {
 
   # Deliberately NOT set: atomic, force_update, replace, reuse_values,
   # reset_values, recreate_pods, upgrade_install, create_namespace.
+  #
+  # MIGRATIONS.md row #15 (this import, PR #73) — comment-only change so the
+  # docs update lands on a .tf-touching HEAD and Atlantis autoplans it.
 }
