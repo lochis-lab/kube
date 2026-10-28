@@ -149,7 +149,7 @@ resource "helm_release" "pihole" {
   namespace  = "default"
   repository = "https://mojo2600.github.io/pihole-kubernetes/"
   chart      = "pihole"
-  version    = "2.34.0"
+  version    = "2.38.0"
 
   # Live user values (`helm get values my-pihole -n default`) — six leaf
   # overrides against the chart defaults plus two metallb annotations. Nothing
