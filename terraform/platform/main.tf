@@ -314,6 +314,185 @@ resource "helm_release" "authentik" {
         }
       }
     }
+# cert-manager — the cluster's entire TLS trust path. It issues/renews every
+# certificate backing the Traefik routes (wildcard *.vanderloch.com included),
+# so this release keeps running exactly as-is: every field below mirrors the
+# LIVE release (chart cert-manager v1.19.1, Helm revision 24, deployed
+# 2025-11-05T16:58:27Z) so a post-merge import yields a no-op plan.
+#
+# IMPORTANT: import must pin the EXACT chart version currently live (v1.19.1).
+# The release is at revision 24 after many upgrades; importing "latest" would
+# rewrite the live release on the next apply.
+#
+# Import (helm_release ID is namespace/name):
+#   terraform import helm_release.cert_manager cert-manager/cert-manager
+# then check state's `repository`: helm provider import can leave it empty
+# (same quirk as the homepage import) — patch it to
+# https://charts.jetstack.io if the plan shows a repository-only diff.
+#
+# NOT managed here: the 6 cert-manager CRDs (chart has installCRDs=false and
+# crds.enabled=false, so they are cluster-installed and unowned-by-Helm), the
+# ClusterIssuer `letsencrypt-production`, and the ns (pre-exists, Rancher-owned).
+resource "helm_release" "cert_manager" {
+  name       = "cert-manager"
+  namespace  = "cert-manager"
+  repository = "https://charts.jetstack.io"
+  chart      = "cert-manager"
+  version    = "v1.19.1"
+
+  # Live user values verbatim (`helm get values cert-manager -n cert-manager`),
+  # reproduced key-for-key. Do not "tidy" this: the podDnsPolicy=None +
+  # podDnsConfig.nameservers pair and the two DNS01 extraArgs are what let
+  # ACME HTTP01/DNS01 validation work from this network, and replicaCount=3 is
+  # the live controller HA setting.
+  values = [yamlencode({
+    extraArgs = [
+      "--dns01-recursive-nameservers=1.1.1.1:53,9.9.9.9:53",
+      "--dns01-recursive-nameservers-only",
+    ]
+    installCRDs = false
+    podDnsConfig = {
+      nameservers = ["1.1.1.1", "9.9.9.9"]
+    }
+    podDnsPolicy = "None"
+    replicaCount = 3
+  })]
+
+  # Mirrors the reflector release: the chart ships a startupapicheck Job, so we
+  # wait for readiness the same way the live install did.
+  wait    = true
+  timeout = 300
+
+  # Deliberately NOT set (all default false outside the resource): atomic,
+  # force_update, replace, reuse_values, reset_values, recreate_pods,
+  # upgrade_install, create_namespace, dependency_update, max_history,
+  # cleanup_on_fail. Any of those could rewrite the live release on an apply;
+  # a non-empty plan here means drift, not a to-do.
+}
+
+# Traefik — the cluster's only ingress controller (Traefik v3.5.3, chart
+# traefik-37.2.0 from the official repo https://helm.traefik.io/traefik).
+#
+# !!! MERGE + IMPORT THIS LAST IN TIER 4 !!!
+# Order is: reflector -> homepage -> pihole -> cert-manager -> authentik ->
+# traefik. Every route in the cluster rides this release, including Atlantis's
+# own webhook path (https://atlantis.vanderloch.com:2459). An apply that
+# restarts traefik (even a harmless values no-op that forces a rollout) briefly
+# interrupts ALL ingress, which also strands the webhook that would report the
+# result. Plan the apply for a quiet window, with no plans in flight.
+#
+# The release is ONLY the chart: deployment (2 replicas), LB Service
+# `traefik` (web 80 / websecure 443 / outbound 2459 / outbound2 2460),
+# ServiceAccount/RBAC, IngressClass `traefik`. It does NOT own:
+#   - IngressRoutes / Middlewares / TLSOptions — managed as CRDs in
+#     terraform/apps (apps), plus a few hand-made ones in ns traefik (see
+#     notes.md, "unmanaged siblings").
+#   - Service `traefik-outbound` (192.168.10.17) — hand-rolled, not in the
+#     release manifest. Leave it alone.
+#   - CRDs: chart ships crds/ (24 files) which helm applies on *install* only;
+#     they already exist in the cluster (installed 2025-10-30).
+#
+# Import (helm_release ID is namespace/name):
+#   terraform import helm_release.traefik traefik/traefik
+# The first post-import plan MUST be a no-op. Non-empty plan = drift, stop.
+resource "helm_release" "traefik" {
+  name       = "traefik"
+  namespace  = "traefik"
+  repository = "https://helm.traefik.io/traefik"
+  chart      = "traefik"
+  version    = "37.2.0"
+
+  # Live user values, verbatim from `helm get values traefik -n traefik`
+  # (revision 10, deployed 2026-09-02). Reproduced key-for-key — every entry
+  # here is load-bearing for the cluster's routing:
+  #   - providers.kubernetesCRD.ingressClass = traefik-external is why Traefik
+  #     only watches IngressRoutes annotated kubernetes.io/ingress.class:
+  #     traefik-external. Changing it silently drops every app route.
+  #   - ports.web redirection is the 80 -> 443 permanent redirect.
+  #   - ports.outbound/outbound2 (2459/2460, TLS) carry the external DNAT
+  #     routes (e.g. https://abs.vanderloch.com:2459).
+  #   - ingressRoute.dashboard.enabled = false: the traefik.vanderloch.com
+  #     dashboard IngressRoute + basic-auth middleware in the ns are hand-made
+  #     and unmanaged (see notes.md).
+  values = [yamlencode({
+    additionalArguments = [
+      "--serversTransport.insecureSkipVerify=true",
+      "--log.level=INFO",
+    ]
+    deployment = {
+      replicas = 2
+    }
+    globalArguments = [
+      "--global.sendanonymoususage=false",
+      "--global.checknewversion=false",
+    ]
+    ingressRoute = {
+      dashboard = {
+        enabled = false
+      }
+    }
+    nodeSelector = {
+      worker = "true"
+    }
+    ports = {
+      outbound = {
+        expose = {
+          default = true
+        }
+        exposedPort = 2459
+        port        = 2459
+        protocol    = "TCP"
+        tls = {
+          enabled = true
+        }
+      }
+      outbound2 = {
+        expose = {
+          default = true
+        }
+        exposedPort = 2460
+        port        = 2460
+        protocol    = "TCP"
+        tls = {
+          enabled = true
+        }
+      }
+      web = {
+        redirections = {
+          entryPoint = {
+            permanent = true
+            scheme    = "https"
+            to        = "websecure"
+          }
+        }
+      }
+      websecure = {
+        tls = {
+          enabled = true
+        }
+      }
+    }
+    providers = {
+      kubernetesCRD = {
+        allowExternalNameServices = true
+        enabled                   = true
+        ingressClass              = "traefik-external"
+      }
+      kubernetesIngress = {
+        allowExternalNameServices = true
+        enabled                   = true
+        publishedService = {
+          enabled = false
+        }
+      }
+    }
+    rbac = {
+      enabled = true
+    }
+    service = {
+      enabled = true
+      type    = "LoadBalancer"
+    }
   })]
 
   wait    = true
@@ -329,5 +508,10 @@ resource "helm_release" "authentik" {
   # CAUTION: helm provider calls `helm upgrade` on ANY attribute change, so even
   # touching `timeout` (e.g. raising it to 1800 for a real upgrade) re-runs an
   # upgrade against the live release. Budget for that deliberately.
+  # upgrade_install, create_namespace. `atomic` in particular would roll back a
+  # failed upgrade of the ingress controller — do not enable it here; a failed
+  # apply must be inspected, not auto-reverted.
+  # `create_namespace` stays unset: ns `traefik` pre-exists and is not managed
+  # by Terraform.
 }
 
