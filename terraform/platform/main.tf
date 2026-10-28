@@ -125,3 +125,66 @@ resource "helm_release" "homepage" {
   # MIGRATIONS.md row #15 (this import, PR #73) — comment-only change so the
   # docs update lands on a .tf-touching HEAD and Atlantis autoplans it.
 }
+
+# Pi-hole — CLUSTER DNS. Every DNS lookup in the homelab resolves through
+# this release (my-pihole-dns-tcp / -udp on 192.168.10.166, DHCP on NodePort).
+# Highest-risk app in the tier-4 batch: a bad apply here breaks name resolution
+# for the whole cluster, so nothing below may diverge from the live release.
+#
+# Apply discipline (MIGRATIONS.md tier 4): apply must happen from INSIDE the
+# cluster (Atlantis in-cluster, no desktop kubeconfig round trip) with an
+# immediate DNS verification right after `atlantis apply` — e.g.
+#   kubectl -n default run dns-verify --rm -i --restart=Never \
+#     --image=busybox:1.36 --command -- nslookup pihole.vanderloch.com 192.168.10.166
+# and a re-check that my-pihole-dns-{tcp,udp} still own 192.168.10.166.
+#
+# Import (helm_release ID is namespace/name):
+#   terraform import helm_release.pihole default/my-pihole
+# then patch `repository`, `chart`, `version` and `values` into state (import
+# leaves them empty and helm provider v3 cannot ignore_changes them — same
+# caveat as the homepage block above). Until the state patch lands, a plan
+# reads as a full replace of the release, NOT as drift.
+resource "helm_release" "pihole" {
+  name       = "my-pihole"
+  namespace  = "default"
+  repository = "https://mojo2600.github.io/pihole-kubernetes/"
+  chart      = "pihole"
+  version    = "2.34.0"
+
+  # Live user values (`helm get values my-pihole -n default`) — six leaf
+  # overrides against the chart defaults plus two metallb annotations. Nothing
+  # else is declared on purpose: everything else in `--all` output is chart
+  # default (verified by diffing against `helm show values pihole --version
+  # 2.34.0`), and pinning those would fake drift of its own.
+  values = [yamlencode({
+    persistentVolumeClaim = {
+      enabled = true
+    }
+    serviceDns = {
+      annotations = {
+        "metallb.universe.tf/allow-shared-ip" = "pihole-svc"
+      }
+      loadBalancerIP = "192.168.10.166"
+      type           = "LoadBalancer"
+    }
+    serviceWeb = {
+      annotations = {
+        "metallb.universe.tf/allow-shared-ip" = "pihole-svc"
+      }
+      loadBalancerIP = "192.168.10.175"
+      type           = "LoadBalancer"
+    }
+  })]
+
+  wait    = true
+  timeout = 300
+
+  # Deliberately NOT set (all default false outside the resource): atomic,
+  # force_update, replace, reuse_values, reset_values, recreate_pods,
+  # upgrade_install, create_namespace. `atomic` on a DNS release would roll the
+  # whole chart back mid-failure and take name resolution down with it.
+  #
+  # Also deliberately unmanaged: the `pihole` IngressRoute in ns default
+  # (pihole.vanderloch.com, unmanaged sibling created a day after the install),
+  # ns `default` itself, and the longhorn PVC the chart template owns.
+}
