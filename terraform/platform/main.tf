@@ -200,3 +200,134 @@ resource "helm_release" "pihole" {
   # (pihole.vanderloch.com, unmanaged sibling created a day after the install),
   # ns `default` itself, and the longhorn PVC the chart template owns.
 }
+
+# authentik — the IdP for the homelab (goauthentik.io). Chart `authentik` 2026.8.3
+# (repo https://charts.goauthentik.io, chart tgz digest
+# sha256:2e504b91da14b4f4f001681b392e0ac67870ab1453dec869247ad181272587be),
+# installed 2026-09-20, revision 1, never upgraded. Everything below mirrors the
+# live release; a non-empty plan here means drift, not a to-do.
+#
+# IF AUTHENTIK BREAKS, LOGINS BREAK (Traefik forwardAuth for auto-school and
+# friends). Treat any non-no-op plan on this resource as a production incident:
+# read the plan before applying, never apply blind.
+#
+# The chart bundles two dependencies (see Chart.yaml):
+#   - postgresql 18.8.17 (oci://registry-1.docker.io/bitnamicharts, condition
+#     postgresql.enabled) -> the `authentik-postgresql` StatefulSet + its 8Gi
+#     Longhorn PVC `data-authentik-postgresql-0` are CHART-OWNED (labels
+#     app.kubernetes.io/instance=authentik, helm.sh/chart=postgresql-18.8.17,
+#     managed-by=Helm). Importing the release covers them; do NOT author the STS
+#     as a separate typed resource.
+#   - authentik-remote-cluster 2.1.0 aliased `serviceAccount` (condition
+#     serviceAccount.create) -> SA/Role/RoleBinding/ClusterRole/ClusterRoleBinding
+#     `authentik*`, also chart-owned.
+#
+# NOT part of this release (unmanaged, deliberately out of scope here):
+#   - ns `authentik` itself (no create_namespace; see terraform/apps/namespaces.tf
+#     follow-up — the ns is not TF-managed anywhere yet).
+#   - IngressRoute `authentik` (auth.vanderloch.com, entryPoints outbound+websecure,
+#     class traefik-external) — hand-applied, outside the chart.
+#   - ServiceAccount/Role/RoleBinding `authentik` in ns authentik is chart-owned,
+#     but svc+ingress `ak-outpost-authentik-embedded-outpost` are created at
+#     runtime by authentik's embedded outpost controller
+#     (app.kubernetes.io/managed-by=goauthentik.io) — never import those.
+#   - secret `lochis-tls` (Reflector copy).
+#
+# Import (helm_release ID is namespace/name):
+#   terraform import helm_release.authentik authentik/authentik
+# then patch the `repository` attribute into state (import leaves it empty and
+# helm provider v3 cannot ignore_changes it — same caveat as `helm_release.homepage`).
+#
+# PRE-MERGE PREREQUISITES (the values below are real secrets, this repo is PUBLIC):
+#   1. add 4 keys to Secret `atlantis-app-vars` (ns ops):
+#        AUTHENTIK_SECRET_KEY, AUTHENTIK_BOOTSTRAP_PASSWORD,
+#        AUTHENTIK_POSTGRESQL_PASSWORD, AUTHENTIK_REDIS_PASSWORD
+#      (values = current live ones; see notes.md for how to read them back, never
+#       commit them).
+#   2. add the matching TF_VAR_authentik_* entries to helm/atlantis/values.yaml
+#      `environmentSecrets`, helm upgrade atlantis, restart atlantis-0.
+#   3. only then open/refresh this PR — otherwise the plan fails fast with
+#      "No value for required variable".
+resource "helm_release" "authentik" {
+  name       = "authentik"
+  namespace  = "authentik"
+  repository = "https://charts.goauthentik.io"
+  chart      = "authentik"
+  version    = "2026.8.3"
+
+  # Live user values, reproduced key-for-key (`helm get values authentik -n
+  # authentik`). The four credentials are injected from sensitive root vars
+  # (Secret atlantis-app-vars -> TF_VAR_authentik_*) instead of literals because
+  # this repo is public; the rendered values are byte-identical to the live
+  # release. Note `authentik.postgresql.password` and `postgresql.auth.password`
+  # are the SAME live string and must stay in lockstep (server-side DB auth vs.
+  # the bitnami subchart's secret) — that is why one variable feeds both.
+  #
+  # `redis.*` is inert in chart 2026.8.3 (no redis subchart, no redis workload,
+  # no AUTHENTIK_REDIS__* key in the rendered Secret), but the keys are in the
+  # live release's values and are reproduced here so the import plans clean.
+  values = [yamlencode({
+    authentik = {
+      error_reporting = {
+        enabled = false
+      }
+      password = var.authentik_bootstrap_password
+      postgresql = {
+        password = var.authentik_postgresql_password
+      }
+      secret_key = var.authentik_secret_key
+    }
+    postgresql = {
+      auth = {
+        password = var.authentik_postgresql_password
+      }
+      enabled = true
+      primary = {
+        persistence = {
+          enabled = true
+          size    = "8Gi"
+        }
+      }
+    }
+    redis = {
+      auth = {
+        password = var.authentik_redis_password
+      }
+      enabled = true
+    }
+    server = {
+      ingress = {
+        enabled = false
+      }
+      resources = {
+        requests = {
+          cpu    = "300m"
+          memory = "768Mi"
+        }
+      }
+    }
+    worker = {
+      resources = {
+        requests = {
+          cpu    = "200m"
+          memory = "512Mi"
+        }
+      }
+    }
+  })]
+
+  wait    = true
+  timeout = 300
+
+  # Deliberately NOT set (all default false outside the resource): atomic,
+  # force_update, replace, reuse_values, reset_values, recreate_pods,
+  # upgrade_install, create_namespace, dependency_update, max_history, lint,
+  # verify, disable_webhook, disable_openapi_validation, cleanup_on_fail,
+  # set/set_sensitive/set_list blocks. Any of those could rewrite the live IdP
+  # release on an apply.
+  #
+  # CAUTION: helm provider calls `helm upgrade` on ANY attribute change, so even
+  # touching `timeout` (e.g. raising it to 1800 for a real upgrade) re-runs an
+  # upgrade against the live release. Budget for that deliberately.
+}
+

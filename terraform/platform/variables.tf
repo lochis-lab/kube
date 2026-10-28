@@ -34,3 +34,42 @@ variable "pihole_local_dns" {
     "192.168.10.170 headscale.vanderloch.com",
   ]
 }
+
+# Companion addition for terraform/platform/variables.tf — REQUIRED for the
+# authentik helm_release block (values reference these). Same pattern as
+# terraform/apps/variables.tf: values arrive as TF_VAR_authentik_* injected by the
+# Atlantis chart `environmentSecrets` from Secret `atlantis-app-vars` (ns ops),
+# so they are never committed. Plans redact them natively (the whole `values`
+# attribute of the helm_release is tainted sensitive by interpolation).
+#
+# Desktop plan:
+#   for k in SECRET_KEY BOOTSTRAP_PASSWORD POSTGRESQL_PASSWORD REDIS_PASSWORD; do
+#     export TF_VAR_authentik_$(echo $k | tr 'A-Z' 'a-z')=$(
+#       kubectl -n ops get secret atlantis-app-vars -o jsonpath="{.data.AUTHENTIK_$k}" | base64 -d)
+#   done
+#   export TF_VAR_kubeconfig_path=$HOME/.kube/config
+
+variable "authentik_secret_key" {
+  description = "authentik AUTHENTIK_SECRET_KEY (chart values authentik.secret_key)"
+  type        = string
+  sensitive   = true
+}
+
+variable "authentik_bootstrap_password" {
+  description = "authentik bootstrap admin password (chart values authentik.password -> AUTHENTIK_PASSWORD)"
+  type        = string
+  sensitive   = true
+}
+
+variable "authentik_postgresql_password" {
+  description = "authentik DB password; feeds BOTH authentik.postgresql.password and postgresql.auth.password (must match live)"
+  type        = string
+  sensitive   = true
+}
+
+variable "authentik_redis_password" {
+  description = "Legacy redis.auth.password carried in the live release values; inert in chart 2026.8.3 but kept for a clean import"
+  type        = string
+  sensitive   = true
+}
+
