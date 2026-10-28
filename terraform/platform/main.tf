@@ -256,3 +256,141 @@ resource "helm_release" "cert_manager" {
   # cleanup_on_fail. Any of those could rewrite the live release on an apply;
   # a non-empty plan here means drift, not a to-do.
 }
+
+# Traefik — the cluster's only ingress controller (Traefik v3.5.3, chart
+# traefik-37.2.0 from the official repo https://helm.traefik.io/traefik).
+#
+# !!! MERGE + IMPORT THIS LAST IN TIER 4 !!!
+# Order is: reflector -> homepage -> pihole -> cert-manager -> authentik ->
+# traefik. Every route in the cluster rides this release, including Atlantis's
+# own webhook path (https://atlantis.vanderloch.com:2459). An apply that
+# restarts traefik (even a harmless values no-op that forces a rollout) briefly
+# interrupts ALL ingress, which also strands the webhook that would report the
+# result. Plan the apply for a quiet window, with no plans in flight.
+#
+# The release is ONLY the chart: deployment (2 replicas), LB Service
+# `traefik` (web 80 / websecure 443 / outbound 2459 / outbound2 2460),
+# ServiceAccount/RBAC, IngressClass `traefik`. It does NOT own:
+#   - IngressRoutes / Middlewares / TLSOptions — managed as CRDs in
+#     terraform/apps (apps), plus a few hand-made ones in ns traefik (see
+#     notes.md, "unmanaged siblings").
+#   - Service `traefik-outbound` (192.168.10.17) — hand-rolled, not in the
+#     release manifest. Leave it alone.
+#   - CRDs: chart ships crds/ (24 files) which helm applies on *install* only;
+#     they already exist in the cluster (installed 2025-10-30).
+#
+# Import (helm_release ID is namespace/name):
+#   terraform import helm_release.traefik traefik/traefik
+# The first post-import plan MUST be a no-op. Non-empty plan = drift, stop.
+resource "helm_release" "traefik" {
+  name       = "traefik"
+  namespace  = "traefik"
+  repository = "https://helm.traefik.io/traefik"
+  chart      = "traefik"
+  version    = "37.2.0"
+
+  # Live user values, verbatim from `helm get values traefik -n traefik`
+  # (revision 10, deployed 2026-09-02). Reproduced key-for-key — every entry
+  # here is load-bearing for the cluster's routing:
+  #   - providers.kubernetesCRD.ingressClass = traefik-external is why Traefik
+  #     only watches IngressRoutes annotated kubernetes.io/ingress.class:
+  #     traefik-external. Changing it silently drops every app route.
+  #   - ports.web redirection is the 80 -> 443 permanent redirect.
+  #   - ports.outbound/outbound2 (2459/2460, TLS) carry the external DNAT
+  #     routes (e.g. https://abs.vanderloch.com:2459).
+  #   - ingressRoute.dashboard.enabled = false: the traefik.vanderloch.com
+  #     dashboard IngressRoute + basic-auth middleware in the ns are hand-made
+  #     and unmanaged (see notes.md).
+  values = [yamlencode({
+    additionalArguments = [
+      "--serversTransport.insecureSkipVerify=true",
+      "--log.level=INFO",
+    ]
+    deployment = {
+      replicas = 2
+    }
+    globalArguments = [
+      "--global.sendanonymoususage=false",
+      "--global.checknewversion=false",
+    ]
+    ingressRoute = {
+      dashboard = {
+        enabled = false
+      }
+    }
+    nodeSelector = {
+      worker = "true"
+    }
+    ports = {
+      outbound = {
+        expose = {
+          default = true
+        }
+        exposedPort = 2459
+        port        = 2459
+        protocol    = "TCP"
+        tls = {
+          enabled = true
+        }
+      }
+      outbound2 = {
+        expose = {
+          default = true
+        }
+        exposedPort = 2460
+        port        = 2460
+        protocol    = "TCP"
+        tls = {
+          enabled = true
+        }
+      }
+      web = {
+        redirections = {
+          entryPoint = {
+            permanent = true
+            scheme    = "https"
+            to        = "websecure"
+          }
+        }
+      }
+      websecure = {
+        tls = {
+          enabled = true
+        }
+      }
+    }
+    providers = {
+      kubernetesCRD = {
+        allowExternalNameServices = true
+        enabled                   = true
+        ingressClass              = "traefik-external"
+      }
+      kubernetesIngress = {
+        allowExternalNameServices = true
+        enabled                   = true
+        publishedService = {
+          enabled = false
+        }
+      }
+    }
+    rbac = {
+      enabled = true
+    }
+    service = {
+      enabled = true
+      type    = "LoadBalancer"
+    }
+  })]
+
+  wait    = true
+  timeout = 300
+
+  # Deliberately NOT set (all default false outside the resource): atomic,
+  # force_update, replace, reuse_values, reset_values, recreate_pods,
+  # upgrade_install, create_namespace. `atomic` in particular would roll back a
+  # failed upgrade of the ingress controller — do not enable it here; a failed
+  # apply must be inspected, not auto-reverted.
+  # `create_namespace` stays unset: ns `traefik` pre-exists and is not managed
+  # by Terraform.
+}
+
