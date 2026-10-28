@@ -39,10 +39,10 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 ## Tier 5 — leftover apps & load balancing (from the 2026-11 cluster audit)
 | # | App | Objects | Notes | Status |
 |---|---|---|---|---|
-| 20 | jackett | deploy+svc+PVC+IR | typed module (audiobookshelf pattern: same ns, NFS, lochis-tls); portainer stack 342; MUST digest-pin the `:latest` image + drop `AUTO_UPDATE` (self-mutating pod fights every plan); decide keep-vs-kill first (still the indexer behind audiobookshelf?) | ⬜ |
+| 20 | jackett | deploy+svc+PVC+IR | 🗑 KILLED 2026-10-28 (owner decision: not feeding ABS — no *arr apps exist, no references in ABS config): deploy+svc+IR+2Gi longhorn PVC deleted from audiobookshelf ns | ✅ |
 | 21 | metallb v0.13.12 | controller+speaker+pool CRs | the ONLY working LB IPAM (kube-vip is CP-VIP-only). Raw manifests, NO helm release → adopt via `helm upgrade --install --take-ownership`, then `terraform import helm_release`; IPAddressPool/L2Advertisement stay typed so allocation policy is reviewable. Upgrade = CRD swap (v1beta1, deprecation warnings already), NOT a values bump. Blast radius = all 15 LB svcs (speaker restart = ARP blip on every LB addr); preserve pihole's allow-shared-ip annotation | ⬜ |
 | 22 | kube-vip v0.8.2 | DaemonSet (3 masters) | control-plane VIP only — keep `svc_enable=false` explicit in values or we grow a third LB implementation. Adopt+import; no-diff import ONLY, never combined with a version bump; owns the API VIP, a bad apply = cluster unreachable | ⬜ |
-| 23 | ~~kube-vip-cloud-provider~~ | — | 🗑 not a migration: broken duplicate LB path (empty config CM; "no address pools could be found" events firing every ~2 min per LB svc). Remove via the k3s manifest path or it gets recreated | 🗑 |
+| 23 | ~~kube-vip-cloud-provider~~ | — | 🗑 DONE 2026-10-28: deployment was hand `kubectl apply`'d (last-applied annotation, no k3s manifest) — deleted deploy + CM + RBAC; no svc used loadBalancerClass; SyncLoadBalancerFailed spam stopped | ✅ |
 
 ## Tier 6 — storage & rancher stack (preconditions + schedule windows)
 | # | App | Objects | Notes | Status |
