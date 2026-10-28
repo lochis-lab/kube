@@ -27,6 +27,8 @@ repoConfig: |
 
 # tier-3 internal values injected at apply time (see atlantis.yaml apps workflow)
 environmentSecrets:
+  - name: TF_VAR_pihole_local_dns
+    secretKeyRef: { name: atlantis-app-vars, key: PIHOLE_LOCAL_DNS }
   - name: TF_VAR_nfs_media_server
     secretKeyRef: { name: atlantis-app-vars, key: NFS_MEDIA_SERVER }
   - name: TF_VAR_searxng_secret
