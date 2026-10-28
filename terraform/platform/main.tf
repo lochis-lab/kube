@@ -354,7 +354,7 @@ resource "helm_release" "cert_manager" {
   namespace  = "cert-manager"
   repository = "https://charts.jetstack.io"
   chart      = "cert-manager"
-  version    = "v1.19.1"
+  version    = "v1.21.3"
 
   # Live user values verbatim (`helm get values cert-manager -n cert-manager`),
   # reproduced key-for-key. Do not "tidy" this: the podDnsPolicy=None +
