@@ -11,6 +11,13 @@
   // Every PR costs an Atlantis plan; keep the queue shallow.
   prConcurrentLimit: 8,
   prHourlyLimit: 4,
+  // Built-in kubernetes manager for the k3s auto-deploy manifests (kube-vip).
+  // Explicit fileMatch — the default is narrow and was not guaranteed to pick
+  // up a bare manifests/ dir. Repo-side bump ONLY: master-01 keeps running its
+  // current version until `kube-vip-sync.sh` is run by hand (deliberate).
+  kubernetes: {
+    managerFilePatterns: ['/^manifests\\/.*\\.ya?ml$/'],
+  },
   customManagers: [
     // --- Docker images pinned by tag:  image = "repo/name:1.2.3" ------------
     // `[^:@"\s]+` before the colon is what keeps this from also matching the
@@ -100,6 +107,7 @@
       matchManagers: [
         'helm-values',
         'custom.regex',
+        'kubernetes',
       ],
       matchDatasources: [
         'docker',
@@ -119,6 +127,7 @@
       matchManagers: [
         'helm-values',
         'custom.regex',
+        'kubernetes',
       ],
       matchUpdateTypes: [
         'major',
