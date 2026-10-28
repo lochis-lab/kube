@@ -51,7 +51,7 @@ defaultTFVersion: "1.17.0"               # match repo required_version
 initContainers:
   - name: kubectl
     image: docker.io/library/alpine:3.24
-    command: ["/bin/sh", "-c", "wget -qO /tools/kubectl https://dl.k8s.io/release/v1.33.9/bin/linux/amd64/kubectl && chmod +x /tools/kubectl"]  # pin matches cluster server
+    command: ["/bin/sh", "-c", "wget -qO /tools/kubectl https://dl.k8s.io/release/v1.37.1/bin/linux/amd64/kubectl && chmod +x /tools/kubectl"]  # pin matches cluster server
     volumeMounts:
       - { name: kubectl-tools, mountPath: /tools }
 extraVolumes:
