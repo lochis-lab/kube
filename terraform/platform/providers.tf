@@ -20,7 +20,9 @@ provider "kubernetes" {
   config_path = var.kubeconfig_path == "" ? null : var.kubeconfig_path
 }
 
-# helm provider v3 takes the kube connection as an argument, not a block.
+# helm provider v3 takes the kube connection as an argument (kubernetes = {...}),
+# not as a nested block — the block form fails at import/plan time. The empty
+# kubeconfig_path is mapped to null so both providers use the in-cluster config.
 provider "helm" {
   kubernetes = {
     config_path = var.kubeconfig_path == "" ? null : var.kubeconfig_path
