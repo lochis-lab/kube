@@ -31,6 +31,7 @@ variable "yt_oauth_refresh_token" {
 
 resource "kubernetes_config_map_v1" "lavalink_config" {
   metadata {
+    ignore_annotations = ["field.cattle.io/*", "metallb.universe.tf/*"] # k3s/metallb re-add these
     name      = "lavalink-config"
     namespace = var.namespace
   }
@@ -94,6 +95,7 @@ resource "kubernetes_config_map_v1" "lavalink_config" {
 
 resource "kubernetes_deployment_v1" "lavalink" {
   metadata {
+    ignore_annotations = ["field.cattle.io/*", "metallb.universe.tf/*"] # k3s/metallb re-add these
     name      = "lavalink"
     namespace = var.namespace
   }
@@ -141,6 +143,7 @@ resource "kubernetes_deployment_v1" "lavalink" {
 
 resource "kubernetes_service_v1" "lavalink" {
   metadata {
+    ignore_annotations = ["field.cattle.io/*", "metallb.universe.tf/*"] # k3s/metallb re-add these
     name      = "lavalink"
     namespace = var.namespace
   }
@@ -161,6 +164,7 @@ resource "kubernetes_service_v1" "lavalink" {
 # address is confirmed repointed at lavalink.vocard.svc.
 resource "kubernetes_service_v1" "lavalink_default_alias" {
   metadata {
+    ignore_annotations = ["field.cattle.io/*", "metallb.universe.tf/*"] # k3s/metallb re-add these
     name      = "lavalink"
     namespace = "default"
   }
