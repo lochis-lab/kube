@@ -680,3 +680,29 @@ resource "kubernetes_secret" "longhorn_backup" {
   }
 }
 
+# longhorn daily backup — the ONLY working backup path in 1.9.2: user-created
+# Backup CRs die in the admission webhook (no-route bug), manager/recurring-
+# job-created backups are fine (proven: full-cluster kickoff + restore proof,
+# 2026-10-29, see MIGRATIONS.md #24). Group "default" is stamped on every
+# volume by the longhorn mutator, so this covers all attached volumes;
+# detached orphans are skipped by design. Cron is UTC — 07:00Z = 02:00
+# America/Toronto in winter (EST), 03:00 during DST.
+resource "kubernetes_manifest" "longhorn_recurringjob_daily_backup" {
+  manifest = {
+    apiVersion = "longhorn.io/v1beta2"
+    kind       = "RecurringJob"
+    metadata = {
+      name      = "daily-backup"
+      namespace = "longhorn-system"
+    }
+    spec = {
+      name        = "daily-backup" # must match metadata.name
+      cron        = "0 7 * * *"
+      task        = "backup"
+      retain      = 14
+      concurrency = 1
+      groups      = ["default"]
+    }
+  }
+}
+
