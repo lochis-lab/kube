@@ -43,7 +43,7 @@ resource "kubernetes_deployment_v1" "mongo" {
       spec {
         container {
           name  = "mongo"
-          image = "docker.io/library/mongo:8.2" # majors pinned by renovate rule + db-major-watch
+          image = "docker.io/library/mongo:8.3" # majors pinned by renovate rule + db-major-watch
           env {
             name  = "MONGO_INITDB_ROOT_USERNAME"
             value = "root"
