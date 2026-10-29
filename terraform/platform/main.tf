@@ -557,7 +557,7 @@ resource "helm_release" "metallb" {
   namespace  = "metallb-system"
   repository = "https://metallb.github.io/metallb"
   chart      = "metallb"
-  version    = "0.13.12" # app v0.13.12 — exact live version; bump is a separate CRD-swap PR
+  version    = "0.16.1" # app v0.13.12 — exact live version; bump is a separate CRD-swap PR
 
   # Only live non-default: pod scrape annotations (prometheus.io/port=7472
   # metrics endpoints). Everything else stock: controller 1 replica,
