@@ -14,7 +14,6 @@ variable "root_password" {
 
 resource "kubernetes_persistent_volume_claim_v1" "mongo_data" {
   metadata {
-    ignore_annotations = ["field.cattle.io/*", "metallb.universe.tf/*"] # k3s/metallb re-add these
     name      = "mongo-pvc"
     namespace = var.namespace
   }
@@ -29,7 +28,6 @@ resource "kubernetes_persistent_volume_claim_v1" "mongo_data" {
 
 resource "kubernetes_deployment_v1" "mongo" {
   metadata {
-    ignore_annotations = ["field.cattle.io/*", "metallb.universe.tf/*"] # k3s/metallb re-add these
     name      = "mongo"
     namespace = var.namespace
   }
@@ -68,11 +66,14 @@ resource "kubernetes_deployment_v1" "mongo" {
       }
     }
   }
+
+  lifecycle {
+    ignore_changes = [metadata[0].annotations] # k3s/metallb re-add theirs every apply
+  }
 }
 
 resource "kubernetes_service_v1" "mongo" {
   metadata {
-    ignore_annotations = ["field.cattle.io/*", "metallb.universe.tf/*"] # k3s/metallb re-add these
     name      = "mongo"
     namespace = var.namespace
   }
@@ -84,5 +85,9 @@ resource "kubernetes_service_v1" "mongo" {
       port        = 27017
       target_port = 27017
     }
+  }
+
+  lifecycle {
+    ignore_changes = [metadata[0].annotations] # k3s/metallb re-add theirs every apply
   }
 }
