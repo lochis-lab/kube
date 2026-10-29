@@ -559,12 +559,21 @@ resource "helm_release" "metallb" {
   chart      = "metallb"
   version    = "0.13.12" # app v0.13.12 — exact live version; bump is a separate CRD-swap PR
 
-  # Only live non-default: pod scrape annotations (prometheus.io/port=7472
-  # metrics endpoints). Everything else stock: controller 1 replica,
-  # --port=7472 --log-level=info args, speaker tolerateMaster=true (master
-  # taints), L2 mode (no FRR), no PDB. `memberlist` secret is speaker-owned at
-  # runtime, not chart-rendered.
+  # Only live non-defaults: pod scrape annotations (prometheus.io/port=7472
+  # metrics endpoints) and `crds.enabled=false` — MANDATORY: chart 0.13.x
+  # ships its CRDs as a subchart whose static conversion-webhook `caBundle`
+  # conflicts (SSA) with the live cert metallb's controller rotates into 2 of
+  # the CRDs → every apply would mark the release `failed`. CRDs are instead
+  # adopted live (field-manager `helm`), annotated `helm.sh/resource-policy:
+  # keep` so helm never deletes them, and excluded from the release. The
+  # chart-bump PR must re-apply new CRDs manually first, then drop this flag.
+  # Everything else stock: controller 1 replica, --port=7472 --log-level=info
+  # args, speaker tolerateMaster=true (master taints), L2 mode (no FRR), no
+  # PDB. `memberlist` secret is speaker-owned at runtime, not chart-rendered.
   values = [yamlencode({
+    crds = {
+      enabled = false
+    }
     prometheus = {
       scrapeAnnotations = true
     }
