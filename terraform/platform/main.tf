@@ -542,36 +542,36 @@ resource "helm_release" "traefik" {
 }
 
 # metallb — the ONLY working LB IPAM (kube-vip is CP-VIP-only, svc_enable=false).
-# Hand-applied from raw manifests 363d ago at v0.13.12, L2 mode; adopted into
-# helm via delete-and-reinstall cutover (NOT a plain --take-ownership: the raw
-# manifest names/labels — deploy `controller`, ds `speaker`, selector
-# `app=metallb` — are incompatible with chart 0.13.12's immutable selectors,
-# which would mean parallel speakers = split-brain ARP on every VIP). Cutover
-# ceremony + import/state-patch runbook lives off-repo (plans/, gitignored);
-# summary in MIGRATIONS.md #21 and the adoption PR body. Merge WITHOUT applying
-# (pre-import, an apply would bare-helm-install over a half-adopted namespace),
-# then `terraform import helm_release.metallb metallb-system/metallb` +
-# state-patch `repository`.
+# Adopted 2026-10-29 from hand-applied raw v0.13.12 manifests via delete-and-
+# reinstall cutover (immutable selectors made --take-ownership impossible —
+# full story in MIGRATIONS.md #21 + plans/ off-repo). Bumped 0.13.12 → 0.16.1
+# same day AFTER pre-applying the 0.16 CRDs by hand: kubectl apply --server-side
+# --force-conflicts --field-manager=helm of the rendered crds subchart +
+# helm.sh/resource-policy=keep on every CRD (helm must never delete them —
+# dropping ipaddresspools releases every VIP). CRDs stay OUT of the release
+# (crds.enabled=false): the 0.13 chart's conversion-webhook caBundle SSA-
+# conflicted with the controller's rotated cert; at 0.16 conversion webhooks
+# are GONE from the CRDs, so a future hygiene PR can flip crds.enabled=true —
+# until then renovate bumps for metallb are disabled (see renovate.json5)
+# because a plain bump without the CRD ceremony crashloops the workloads
+# (missing ServiceBGPStatus/ServiceL2Status kinds, incident PR #115).
 resource "helm_release" "metallb" {
   name       = "metallb"
   namespace  = "metallb-system"
   repository = "https://metallb.github.io/metallb"
   chart      = "metallb"
-  version    = "0.13.12" # app v0.13.12 — exact live version; bump is a separate CRD-swap PR
+  version    = "0.16.1" # app v0.16.1 — bumped from 0.13.12 on 2026-10-29 (CRD ceremony below)
 
   # Only live non-defaults: pod scrape annotations (prometheus.io/port=7472
-  # metrics endpoints) and `crds.enabled=false` — MANDATORY: chart 0.13.x
-  # ships its CRDs as a subchart whose static conversion-webhook `caBundle`
-  # conflicts (SSA) with the live cert metallb's controller rotates into 2 of
-  # the CRDs → every apply would mark the release `failed`. CRDs are instead
-  # adopted live (field-manager `helm`), annotated `helm.sh/resource-policy:
-  # keep` so helm never deletes them, and excluded from the release. The
-  # chart-bump PR must re-apply new CRDs manually first, then drop this flag.
-  # Everything else stock: controller 1 replica, --port=7472 --log-level=info
-  # args, speaker tolerateMaster=true (master taints), L2 mode (no FRR), no
-  # PDB. `memberlist` secret is speaker-owned at runtime, not chart-rendered.
+  # metrics endpoints), `crds.enabled=false` and `frrk8s.enabled=false`.
+  # Everything else stock: controller 1 replica, speaker tolerateMaster=true
+  # (master taints), L2 mode, no BGP backend. `memberlist` secret is
+  # speaker-owned at runtime, not chart-rendered.
   values = [yamlencode({
     crds = {
+      enabled = false
+    }
+    frrk8s = {
       enabled = false
     }
     prometheus = {
