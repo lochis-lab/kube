@@ -23,6 +23,13 @@ resource "kubernetes_deployment_v1" "vocard_bot" {
   }
   spec {
     replicas = 1
+    # Single replica on an RWO longhorn PVC: RollingUpdate deadlocks (new pod
+    # can't attach the volume while the old one holds it, old one won't die
+    # until the new is Ready). Recreate = kill-then-create. Proven necessary
+    # during the 2026-10-28 lavalink-cutover restart.
+    strategy {
+      type = "Recreate"
+    }
     selector {
       match_labels = { app = "vocard-bot" }
     }
