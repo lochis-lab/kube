@@ -563,14 +563,12 @@ resource "helm_release" "metallb" {
   version    = "0.16.1" # app v0.16.1 — bumped from 0.13.12 on 2026-10-29 (CRD ceremony below)
 
   # Only live non-defaults: pod scrape annotations (prometheus.io/port=7472
-  # metrics endpoints), `crds.enabled=false` and `frrk8s.enabled=false`.
-  # Everything else stock: controller 1 replica, speaker tolerateMaster=true
-  # (master taints), L2 mode, no BGP backend. `memberlist` secret is
-  # speaker-owned at runtime, not chart-rendered.
+  # metrics endpoints) and frrk8s.enabled=false (0.16 defaults the frr-k8s BGP
+  # subchart ON; this cluster is L2-only). crds.enabled defaults TRUE since the
+  # 0.16.1 flip — 0.16 CRDs have no conversion webhooks, so the 0.13 caBundle
+  # SSA-conflict class is gone and the subchart applies cleanly; every CRD also
+  # still carries helm.sh/resource-policy=keep as a belt-and-braces guard.
   values = [yamlencode({
-    crds = {
-      enabled = false
-    }
     frrk8s = {
       enabled = false
     }
@@ -595,5 +593,51 @@ resource "helm_release" "metallb" {
   #     identical live; a chart bump must kubectl-apply new CRDs manually)
   #   - the 12 LB Services consuming the pools (pihole's shared-IP .166
   #     annotation lives in the pihole release's values, not here)
+}
+
+# metallb pool CRs — hand-applied at the original 2025 install, typed since
+# 2026-10-29 (MIGRATIONS.md #21 follow-up) so the VIP allocation policy is
+# reviewable in git: .160-.200 general range + the single /32 for
+# traefik-outbound (.17, source-IP-stable egress). IMPORTED, not created —
+# and until the import lands, any terraform-platform apply from a branch
+# without these blocks plans their DESTRUCTION (= VIP release).
+resource "kubernetes_manifest" "metallb_first_pool" {
+  field_manager {
+    # the CRs were originally kubectl client-side applied — take the fields
+    force_conflicts = true
+  }
+  manifest = {
+    apiVersion = "metallb.io/v1beta1"
+    kind       = "IPAddressPool"
+    metadata = {
+      name      = "first-pool"
+      namespace = "metallb-system"
+    }
+    spec = {
+      addresses = [
+        "192.168.10.160-192.168.10.200",
+        "192.168.10.17/32",
+      ]
+      autoAssign    = true
+      avoidBuggyIPs = false
+    }
+  }
+}
+
+resource "kubernetes_manifest" "metallb_l2advertisement" {
+  field_manager {
+    force_conflicts = true
+  }
+  manifest = {
+    apiVersion = "metallb.io/v1beta1"
+    kind       = "L2Advertisement"
+    metadata = {
+      name      = "example"
+      namespace = "metallb-system"
+    }
+    spec = {
+      ipAddressPools = ["first-pool"]
+    }
+  }
 }
 
