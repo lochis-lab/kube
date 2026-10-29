@@ -541,3 +541,50 @@ resource "helm_release" "traefik" {
   # by Terraform.
 }
 
+# metallb — the ONLY working LB IPAM (kube-vip is CP-VIP-only, svc_enable=false).
+# Hand-applied from raw manifests 363d ago at v0.13.12, L2 mode; adopted into
+# helm via delete-and-reinstall cutover (NOT a plain --take-ownership: the raw
+# manifest names/labels — deploy `controller`, ds `speaker`, selector
+# `app=metallb` — are incompatible with chart 0.13.12's immutable selectors,
+# which would mean parallel speakers = split-brain ARP on every VIP). Cutover
+# ceremony + import/state-patch runbook lives off-repo (plans/, gitignored);
+# summary in MIGRATIONS.md #21 and the adoption PR body. Merge WITHOUT applying
+# (pre-import, an apply would bare-helm-install over a half-adopted namespace),
+# then `terraform import helm_release.metallb metallb-system/metallb` +
+# state-patch `repository`.
+resource "helm_release" "metallb" {
+  name       = "metallb"
+  namespace  = "metallb-system"
+  repository = "https://metallb.github.io/metallb"
+  chart      = "metallb"
+  version    = "0.13.12" # app v0.13.12 — exact live version; bump is a separate CRD-swap PR
+
+  # Only live non-default: pod scrape annotations (prometheus.io/port=7472
+  # metrics endpoints). Everything else stock: controller 1 replica,
+  # --port=7472 --log-level=info args, speaker tolerateMaster=true (master
+  # taints), L2 mode (no FRR), no PDB. `memberlist` secret is speaker-owned at
+  # runtime, not chart-rendered.
+  values = [yamlencode({
+    prometheus = {
+      scrapeAnnotations = true
+    }
+  })]
+
+  wait    = true
+  timeout = 300
+
+  # Deliberately NOT set: atomic, force_update, replace, recreate_pods,
+  # upgrade_install, create_namespace, etc. (same discipline as traefik above —
+  # never auto-rollback or surprise-roll the LB data plane).
+  #
+  # Unmanaged by this release (do not author them here):
+  #   - ns `metallb-system` itself (pod-security labels = privileged, preserved)
+  #   - IPAddressPool `first-pool` (192.168.10.160-200 + 192.168.10.17/32) and
+  #     L2Advertisement `example` — pre-date the release, hand-applied; typed
+  #     kubernetes_manifest follow-up per MIGRATIONS.md #21
+  #   - the 8 metallb.io CRDs (helm crds/ dir, apply-only — the 0.13.12 set is
+  #     identical live; a chart bump must kubectl-apply new CRDs manually)
+  #   - the 12 LB Services consuming the pools (pihole's shared-IP .166
+  #     annotation lives in the pihole release's values, not here)
+}
+
