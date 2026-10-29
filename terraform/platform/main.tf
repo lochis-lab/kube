@@ -641,3 +641,42 @@ resource "kubernetes_manifest" "metallb_l2advertisement" {
   }
 }
 
+# longhorn backup target — Garage S3 (bucket "longhorn") served from a pve1 LXC.
+# Longhorn 1.9 configures targets via the BackupTarget CR (the old settings
+# backup-target / backup-target-credential-secret are gone); "default" existed
+# empty since install and was IMPORTED, not created. Credentials live in the
+# Secret below, values via TF_VARs from atlantis-app-vars (LONGHORN_BACKUP_*);
+# the endpoint URL is an infra detail and never appears in this repo.
+# Precondition for MIGRATIONS.md #24 adoption: one restore must be proven
+# through this target before any RecurringJob is added.
+resource "kubernetes_manifest" "longhorn_backuptarget" {
+  field_manager {
+    force_conflicts = true # longhorn-manager owns the seeded empty defaults
+  }
+  manifest = {
+    apiVersion = "longhorn.io/v1beta2"
+    kind       = "BackupTarget"
+    metadata = {
+      name      = "default"
+      namespace = "longhorn-system"
+    }
+    spec = {
+      backupTargetURL  = "s3://longhorn@garage/"
+      credentialSecret = kubernetes_secret.longhorn_backup.metadata[0].name
+    }
+  }
+}
+
+resource "kubernetes_secret" "longhorn_backup" {
+  metadata {
+    name      = "longhorn-backup"
+    namespace = "longhorn-system"
+  }
+
+  data = {
+    AWS_ACCESS_KEY_ID     = var.longhorn_backup_access_key
+    AWS_SECRET_ACCESS_KEY = var.longhorn_backup_secret_key
+    AWS_ENDPOINTS         = var.longhorn_backup_endpoint
+  }
+}
+
