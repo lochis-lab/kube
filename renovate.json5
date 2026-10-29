@@ -78,6 +78,24 @@
     },
   ],
   packageRules: [
+    // metallb chart bump = manual ceremony, never a plain apply: the release
+    // runs with crds.enabled=false (SSA caBundle conflict, see PR #113), so a
+    // version bump upgrades the workloads WITHOUT the new CRDs → controller+
+    // speaker CrashLoop on missing kinds (ServiceBGPStatus…) and wait=true
+    // times out the apply (incident 2026-10-29, PR #115). The deliberate bump
+    // PR must kubectl-apply the new CRDs first (force-conflicts, manager
+    // helm, resource-policy keep) and review 0.16 values deltas (frr-k8s
+    // subchart defaults on; L2-only cluster wants it off). Re-enable when
+    // that PR lands.
+    {
+      matchDatasources: [
+        'helm',
+      ],
+      matchDepNames: [
+        'metallb',
+      ],
+      enabled: false,
+    },
     // The built-in `terraform` manager also extracts `image = "…"` as a docker
     // dep, so every image got found twice → duplicate PRs (#54 vs #59, #61 vs
     // #66). The custom managers above are the single source of truth.
