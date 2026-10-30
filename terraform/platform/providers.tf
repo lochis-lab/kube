@@ -3,6 +3,7 @@ terraform {
   required_providers {
     kubernetes = { source = "hashicorp/kubernetes", version = "~> 3.4" }
     helm       = { source = "hashicorp/helm", version = "~> 3.3" }
+    cloudflare = { source = "cloudflare/cloudflare", version = "~> 5.0" }
   }
   # State backend: Terraform `kubernetes` — state as Secret + Lease locking in ns `ops`.
   # Secret: tfstate-default-kube-platform (matches atlantis.yaml project terraform-platform).
@@ -27,4 +28,9 @@ provider "helm" {
   kubernetes = {
     config_path = var.kubeconfig_path == "" ? null : var.kubeconfig_path
   }
+
+   provider "cloudflare" {
+     api_token = var.cloudflare_api_token
+   }
+
 }
