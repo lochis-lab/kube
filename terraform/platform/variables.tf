@@ -73,20 +73,3 @@ variable "authentik_redis_password" {
   sensitive   = true
 }
 
-
-variable "longhorn_backup_access_key" {
-  description = "Garage S3 access key for the longhorn backup bucket (LONGHORN_BACKUP_ACCESS_KEY)"
-  type        = string
-  sensitive   = true
-}
-
-variable "longhorn_backup_secret_key" {
-  description = "Garage S3 secret key for the longhorn backup bucket (LONGHORN_BACKUP_SECRET_KEY)"
-  type        = string
-  sensitive   = true
-}
-
-variable "longhorn_backup_endpoint" {
-  description = "Garage S3 endpoint URL, e.g. http://<ip>:3900 (LONGHORN_BACKUP_ENDPOINT); infra detail, never inline in this repo"
-  type        = string
-}
