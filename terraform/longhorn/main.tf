@@ -11,7 +11,14 @@ resource "helm_release" "longhorn" {
   repository = "https://charts.longhorn.io"
   chart      = "longhorn"
   version    = "1.11.3"
-  values = []
+  # Engine auto-upgrade: without this (default 0) engines stay on old binaries
+  # after chart bumps (all 30 were still v1.9.2 after the 1.10.2→1.11.3 hops).
+  # 3 concurrent live engine upgrades per node; volumes are RF2.
+  values = [yamlencode({
+    defaultSettings = {
+      concurrentAutomaticEngineUpgradePerNodeLimit = 3
+    }
+  })]
 }
 
 # Backup target — Garage S3 (bucket "longhorn") served from a pve1 LXC.
