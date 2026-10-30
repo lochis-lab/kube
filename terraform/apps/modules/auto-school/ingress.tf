@@ -1,4 +1,10 @@
 resource "kubernetes_manifest" "auto_school_ir" {
+  # Live object gained fields from a manual kubectl patch during the recorder
+  # cutover; TF is the owner of record — force SSA conflicts instead of erroring.
+  field_manager {
+    name            = "terraform-apps"
+    force_conflicts = true
+  }
   manifest = {
     apiVersion = "traefik.io/v1alpha1"
     kind       = "IngressRoute"
