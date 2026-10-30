@@ -15,31 +15,10 @@ resource "kubernetes_persistent_volume_claim_v1" "config" {
     resources { requests = { storage = "2Gi" } }
   }
 }
-# legacy pair: created by an earlier deploy, not mounted by the current
-# deployment — kept managed so their lifecycle is explicit; delete here when
-# ready to retire them from the cluster.
-resource "kubernetes_persistent_volume_claim_v1" "legacy_config" {
-  metadata {
-      name = "audiobookshelf-config"
-      namespace = var.namespace
-    }
-  spec {
-    access_modes      = ["ReadWriteOnce"]
-    storage_class_name = "longhorn"
-    resources { requests = { storage = "2Gi" } }
-  }
-}
-resource "kubernetes_persistent_volume_claim_v1" "legacy_metadata" {
-  metadata {
-      name = "audiobookshelf-metadata"
-      namespace = var.namespace
-    }
-  spec {
-    access_modes      = ["ReadWriteOnce"]
-    storage_class_name = "longhorn"
-    resources { requests = { storage = "10Gi" } }
-  }
-}
+# legacy pair RETIRED 2026-10-30: audiobookshelf-config/metadata were orphans
+# (dead since 2025-11, superseded by abs-config/abs-metadata); user deleted them,
+# and an accidental partial terraform apply recreated them empty — removed from
+# management and deleted live in the same pass (volumes empty, nothing lost).
 resource "kubernetes_persistent_volume_claim_v1" "metadata" {
   metadata {
       name = "abs-metadata"

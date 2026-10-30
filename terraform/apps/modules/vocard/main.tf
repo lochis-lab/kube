@@ -40,7 +40,10 @@ resource "kubernetes_deployment_v1" "vocard_bot" {
       spec {
         automount_service_account_token = false # matches live (portainer-era)
         enable_service_links            = false
-        host_network                    = true # matches live — bot binds host ports directly
+        # hostNetwork dropped 2026-10-30: portainer's klipper svclb claims hostPort
+        # 8000 on every agent node, so a hostNetwork:8000 pod can never schedule
+        # (stranded Pending after the k3s-1.34 svclb sprawl). Bot now gets normal
+        # pod networking + the vocard-bot ClusterIP Service below.
         image_pull_secrets {
           name = "reg-credentials-ghcr"
         }
@@ -113,6 +116,22 @@ resource "kubernetes_deployment_v1" "vocard_dashboard" {
   }
   lifecycle {
     ignore_changes = [metadata[0].annotations, spec[0].template[0].metadata[0].annotations]
+  }
+}
+
+resource "kubernetes_service_v1" "vocard_bot" {
+  metadata {
+    name      = "vocard-bot"
+    namespace = var.namespace
+    labels    = { app = "vocard-bot" }
+  }
+  spec {
+    selector = { app = "vocard-bot" }
+    port {
+      name        = "http"
+      port        = 8000
+      target_port = 8000
+    }
   }
 }
 
