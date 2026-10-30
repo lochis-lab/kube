@@ -47,7 +47,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 ## Tier 6 — storage & rancher stack (preconditions + schedule windows)
 | # | App | Objects | Notes | Status |
 |---|---|---|---|---|
-| 24 | longhorn v1.9.2 | full system | GATE CLEARED 2026-10-29 (PR #120): BackupTarget CR → Garage S3 (pve1 LXC, bucket longhorn) + credential Secret via LONGHORN_BACKUP_* TF vars; full backup→destroy→restore round-trip proven with byte-identical checksums. NOTE: user-created Backup CRs hit a v1.9.2 webhook no-route bug (EOF) — backups ride the RecurringJob path (works). Remaining: RecurringJob PR, single-default-SC PR, then adopt via `--take-ownership` chart, never typed (CSI + webhooks + 40+ CRDs); upgrades ride longhorn's own engine-drain path — TF must not force manager restarts | ⬜ |
+| 24 | longhorn v1.9.2 | full system | ✅ DONE 2026-10-30 (PRs #120/#122/#123): BackupTarget → Garage S3 + restore proof (checksums identical); daily-backup RecurringJob TF-owned (07:00Z, retain 14); single-default-SC (k3s local-storage disabled on 3 masters); ADOPTED raw→helm chart 1.9.2 rev 1, all 40 chart-owned objects pre-stamped with Helm ownership, engines/replicas never restarted, 30/30 volumes healthy. Lives in terraform/longhorn (pilot per-app root module, own state+project). Known: user-created Backup CRs broken in 1.9.2 (webhook no-route) — RecurringJob is THE backup path; setting changes only via values.defaultSettings | ✅ |
 | 25 | rancher 2.14.0 | helm release | any diff restarts 3 replicas (UI/API outage); never let a plan regenerate its bootstrap/tls secrets. Fleet is idle (0 GitRepos, only fleet-agent-local) — keep-rancher-vs-shed-it is a separate owner decision (import ≠ endorsement) | ⬜ |
 | 26 | rancher-webhook | helm release | import WITH rancher; apply sequence inside the tier: SUC → webhook → fleet → rancher | ⬜ |
 | 27 | system-upgrade-controller | helm release | THE node-upgrade mechanism (k3s master/worker Plans) — genuinely load-bearing; never roll while a Plan is executing; running image v0.19.0 vs chart appVersion drift noted | ⬜ |
@@ -57,6 +57,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | # | App | Objects | Notes | Status |
 |---|---|---|---|---|
 | 29 | atlantis 6.16.2 | helm_release | values already live in `helm/atlantis/values.yaml` (its own TODO). The apply modifies the applier: plan locally, prove No changes, single quiet-window apply, verify /healthz before any further commands. ops tfstate Secrets/Leases stay backend-owned, never TF-managed | ⬜ |
+| 30 | per-app TF layout rollout | platform | Migrate the 7 remaining platform helm releases (reflector, homepage, pihole, authentik, cert-manager, traefik, metallb) into per-app root modules like terraform/longhorn/ (pilot PR #123): own backend secret kube-<app>, own atlantis project, state rm + import per app, one app per PR. End state: platform dir emptied/retired | ⬜ |
 
 ## Hygiene quick wins (tiny PRs, no imports — from the 2026-11 audit)
 - StorageClass: drop `local-path`'s default-class annotation (two default SCs = latent scheduling trap)
