@@ -57,6 +57,8 @@ environmentSecrets:
     secretKeyRef: { name: atlantis-app-vars, key: LAVALINK_SPOTIFY_CLIENT_SECRET }
   - name: TF_VAR_lavalink_yt_oauth_refresh_token
     secretKeyRef: { name: atlantis-app-vars, key: LAVALINK_YT_OAUTH_REFRESH_TOKEN }
+  - name: TF_VAR_cloudflare_api_token
+    secretKeyRef: { name: atlantis-app-vars, key: CLOUDFLARE_API_TOKEN }
 
 environment:
   ATLANTIS_LOG_LEVEL: info
