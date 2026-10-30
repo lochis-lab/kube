@@ -90,6 +90,11 @@ resource "kubernetes_deployment_v1" "api_dev" {
             name  = "BACKEND__CACHE__URL"
             value = "redis://default:$(REDIS_PASSWORD)@quickticket-redis-dev.${var.namespace}.svc.cluster.local:6379/0"
           }
+          # TrustedHostMiddleware 400s any other Host header
+          env {
+            name  = "BACKEND__SECURITY__ALLOWED_HOSTS"
+            value = "[\"qt-dev.aerosol.dev\"]"
+          }
           readiness_probe {
             tcp_socket {
               port = "http"
@@ -252,6 +257,10 @@ resource "kubernetes_deployment_v1" "api_prod" {
           env {
             name  = "BACKEND__CACHE__URL"
             value = "redis://default:$(REDIS_PASSWORD)@quickticket-redis-prod.${var.namespace}.svc.cluster.local:6379/0"
+          }
+          env {
+            name  = "BACKEND__SECURITY__ALLOWED_HOSTS"
+            value = "[\"quickticket.aerosol.dev\"]"
           }
           readiness_probe {
             tcp_socket {
