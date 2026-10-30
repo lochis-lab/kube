@@ -13,18 +13,22 @@
 # (keys POSTGRES_PASSWORD / REDIS_PASSWORD). Dependent env expansion (k8s "$(VAR)",
 # referenced var must be declared first) composes them into the connection URLs.
 #
-# GHCR packages (ghcr.io/thegamecracks/quickticket-{api,web}) are PRIVATE;
-# every pod spec below references the externally-created imagePullSecret
-# "ghcr-pull" (type kubernetes.io/dockerconfigjson). It is NOT terraform-managed
-# (same pattern as quickticket-secret-{dev,prod}) — create it once on the cluster:
+# GHCR packages (ghcr.io/thegamecracks/quickticket-{api,web}) are PUBLIC
+# (published via GITHUB_TOKEN from the public repo, visibility inherited), so
+# the cluster pulls them anonymously. NO pull secret is required.
+#
+# Every pod spec below nonetheless references an imagePullSecret named
+# "ghcr-pull" as a deliberate no-op placeholder: kubelet ignores a missing
+# secret and pulls anonymously. If the packages are ever made PRIVATE, the
+# entire fix is creating that one secret (no terraform change):
 #
 #   kubectl -n quickticket create secret docker-registry ghcr-pull \
 #     --docker-server=ghcr.io \
-#     --docker-username=thegamecracks \
+#     --docker-username=<github-user> \
 #     --docker-password=<classic PAT, read:packages scope>
 #
-# Images also don't exist until the quickticket repo's CI publishes its first
-# :dev / :1.0.0 builds, so pods ImagePullBackOff until then. Expected.
+# Images don't exist until the quickticket repo's CI publishes its first
+# :dev builds, so pods ImagePullBackOff until then. Expected; self-heals.
 
 # ---------------------------------------------------------------- api (dev) --
 resource "kubernetes_deployment_v1" "api_dev" {
@@ -49,9 +53,6 @@ resource "kubernetes_deployment_v1" "api_dev" {
       spec {
         automount_service_account_token = false # house style
         enable_service_links            = false # house style
-        image_pull_secrets {
-          name = "ghcr-pull"
-        }
         container {
           name              = "api"
           image             = "ghcr.io/thegamecracks/quickticket-api:dev"
@@ -147,9 +148,6 @@ resource "kubernetes_deployment_v1" "web_dev" {
       spec {
         automount_service_account_token = false
         enable_service_links            = false
-        image_pull_secrets {
-          name = "ghcr-pull"
-        }
         container {
           name              = "web"
           image             = "ghcr.io/thegamecracks/quickticket-web:dev"
@@ -219,9 +217,6 @@ resource "kubernetes_deployment_v1" "api_prod" {
       spec {
         automount_service_account_token = false
         enable_service_links            = false
-        image_pull_secrets {
-          name = "ghcr-pull"
-        }
         container {
           name              = "api"
           # PROMOTION = bump this tag in a PR (Atlantis plans/applies it)
@@ -316,9 +311,6 @@ resource "kubernetes_deployment_v1" "web_prod" {
       spec {
         automount_service_account_token = false
         enable_service_links            = false
-        image_pull_secrets {
-          name = "ghcr-pull"
-        }
         container {
           name              = "web"
           # PROMOTION = bump this tag in the same PR as the api tag above
