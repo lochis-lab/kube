@@ -62,6 +62,17 @@
       datasourceTemplate: 'docker',
       versioningTemplate: 'docker',
     },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^manifests\/k3s-version\.txt$/',
+      ],
+      matchStrings: [
+        '^v(?<currentValue>\\S+)$',
+      ],
+      depNameTemplate: 'k3s-io/k3s',
+      datasourceTemplate: 'github-releases',
+    },
     // --- kubectl in the atlantis initContainer (dl.k8s.io URL) --------------
     // Must stay close to the cluster server version; opens a normal bump PR.
     {
