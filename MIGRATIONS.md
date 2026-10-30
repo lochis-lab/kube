@@ -47,7 +47,7 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 ## Tier 6 — storage & rancher stack (preconditions + schedule windows)
 | # | App | Objects | Notes | Status |
 |---|---|---|---|---|
-| 24 | longhorn v1.9.2 | full system | ✅ DONE 2026-10-30 (PRs #120/#122/#123): BackupTarget → Garage S3 + restore proof (checksums identical); daily-backup RecurringJob TF-owned (07:00Z, retain 14); single-default-SC (k3s local-storage disabled on 3 masters); ADOPTED raw→helm chart 1.9.2 rev 1, all 40 chart-owned objects pre-stamped with Helm ownership, engines/replicas never restarted, 30/30 volumes healthy. Lives in terraform/longhorn (pilot per-app root module, own state+project). Known: user-created Backup CRs broken in 1.9.2 (webhook no-route) — RecurringJob is THE backup path; setting changes only via values.defaultSettings | ✅ |
+| 24 | longhorn v1.9.2 | full system | ✅ DONE 2026-10-30 (PRs #120/#122/#123): BackupTarget → Garage S3 + restore proof (checksums identical); daily-backup RecurringJob TF-owned (07:00Z, retain 14); single-default-SC (k3s local-storage disabled on 3 masters); ADOPTED raw→helm chart 1.9.2 rev 1, all 40 chart-owned objects pre-stamped with Helm ownership, engines/replicas never restarted, 30/30 volumes healthy. Lives in terraform/longhorn (pilot per-app root module, own state+project). Known: user-created Backup CRs broken in 1.9.2 (webhook no-route) — RecurringJob is THE backup path; setting changes only via values.defaultSettings. **UPGRADE LADDER DONE same day**: k3s fleet-wide v1.33.9→v1.34.12 (all 7 nodes, config.yaml-holds-all-flags), then chart 1.9.2→1.10.2→1.11.3→1.12.1→1.13.0 with `concurrentAutomaticEngineUpgradePerNodeLimit=3` (engines self-roll; 28/28 healthy at 1.13.0, global-manager Deployment). Post-1.13 cleanup: `networkPolicies.restrictInternalTraffic=false` mitigation line removable in own PR | ✅ |
 | 25 | rancher 2.14.0 | helm release | any diff restarts 3 replicas (UI/API outage); never let a plan regenerate its bootstrap/tls secrets. Fleet is idle (0 GitRepos, only fleet-agent-local) — keep-rancher-vs-shed-it is a separate owner decision (import ≠ endorsement) | ⬜ |
 | 26 | rancher-webhook | helm release | import WITH rancher; apply sequence inside the tier: SUC → webhook → fleet → rancher | ⬜ |
 | 27 | system-upgrade-controller | helm release | THE node-upgrade mechanism (k3s master/worker Plans) — genuinely load-bearing; never roll while a Plan is executing; running image v0.19.0 vs chart appVersion drift noted | ⬜ |
@@ -60,23 +60,15 @@ Status key: ⬜ todo · 🚧 in progress · ✅ done · 🗑 decommission instea
 | 30 | per-app TF layout rollout | platform | Migrate the 7 remaining platform helm releases (reflector, homepage, pihole, authentik, cert-manager, traefik, metallb) into per-app root modules like terraform/longhorn/ (pilot PR #123): own backend secret kube-<app>, own atlantis project, state rm + import per app, one app per PR. End state: platform dir emptied/retired | ⬜ |
 
 ## Hygiene quick wins (tiny PRs, no imports — from the 2026-11 audit)
-- StorageClass: drop `local-path`'s default-class annotation (two default SCs = latent scheduling trap)
+- ~~StorageClass: drop `local-path`'s default-class annotation~~ **DONE 2026-10-30**: local-storage provisioner disabled on all 3 masters (config.yaml `disable`), local-path SC gone entirely; `longhorn` is the sole default SC
 - Delete the duplicate `paloch-web` IngressRoute in ns `traefik` (the real one lives in ns `paloch`)
 - Trim reflector's allowed/auto namespace lists — `pi-omni` and `micro-transcribe` are long gone
 - quickticket #13: the PV (not the PVC) is the poisoned object — marked-for-deletion PV → 10k+ FailedAttachVolume events → prod PG ContainerCreating for a month. Fix: drop the pvc-protection finalizer, let the PV finish deleting, let the deployment re-provision (old prod data already unrecoverable; PR #70 has the analysis)
 
 ## Decommission candidates (do NOT migrate)
 - ~~default ns playground: lavalink, mongo, mongo-express~~ **RESOLVED 2026-11-28**: audit verdict overturned by live evidence — mongo (osu-tracker DB) + lavalink (vocard-dashboard web player, Client [WEB] in logs) were load-bearing. Both ADOPTED into TF (modules/mongo in ns default; modules/lavalink recreated in ns vocard with VIP .163 + ExternalName alias preserved). mongo-express: DELETED (crashlooped 74×, no users). Leftover: `financial-planner` DB (732K, no in-cluster owner) — VIP .160 stays until its fate is decided; `Aerosol` DB = dead data, drop when convenient
-- udpTest (test junk) · valheim/ (manifests exist, nothing deployed)
-- micro-transcribe + pi-omni — user confirmed 2026-11: not staying; decommission workloads when convenient
-- wyze-bridge — user confirmed 2026-10-27: moved from Tier 2 #9; do NOT migrate, decommission when convenient
-- portainer — overlaps Atlantis; decommission after tier 4 stabilizes (3 LB svcs + mongo duplicate + 16Gi PVCs still held; it is also the origin of most unmanaged objects above — migrate/delete those first so its stack records aren't the only provenance)
-- kubero-managed apps (aerosol, rockywestprod) stay kubero's problem
-- snap-camera + snap-camera-server — nothing deployed, but an IR still publishes a third-party host with a cert Ready=False for 282d: kill the IR first (only live exposure), then the namespaces
-- ns `aerosol` orphan bits — LB svc with NO endpoints, an IR for it, and stray secrets/tls; the real app lives in kubero's aerosol-production
-- empty namespaces: `seafile`, `valheim` (nothing but kube-root-ca.crt)
-- orphan PVCs (~14Gi): `audiobookshelf/audiobookshelf-config` + `audiobookshelf-metadata` (superseded by abs-*), `default/vocard-pvc`, `portainer/vocard-pvc`; plus orphaned vocard CMs/Secret in `default`
-- duplicate mongo pair in ns `portainer` (portainer stack 345 — degenerate copy of the default-ns playground stack)
+- **NAMESPACE PURGE 2026-10-30 — all deleted, zero stragglers**: `udpTest` + `micro-transcribe` (already gone before the pass), `seafile` + `valheim` (empty), `wyze-bridge` (deploy+svc, no PVC), `snap-camera` + `snap-camera-server` (secrets/CMs only; the 288d Ready=False cert IR deleted FIRST), `portainer` (stack + degenerate mongo pair + 2 LB svcs VIPs .162/.164 + 15Gi PVCs + its svclb hostPort-8000 pods — the vocard scheduling conflict source). Volumes 30→28, all healthy. NOT yet removed: `pterodactyl` ns (row 12: decommission window due since ~2026-11-03 — 70Gi of PVCs), kubero-managed ns's (kubero's problem)
+- micro-transcribe + pi-omni — user confirmed 2026-11: not staying; decommission workloads when convenient — **ns already gone as of the 2026-10-30 purge**
 - kube-vip-cloud-provider — see tier 5 #23
 - coredns + other k3s-packaged bits (metrics-server, local-path-provisioner): hands-off forever — k3s rewrites them on every upgrade; custom DNS goes in coredns custom override files, not TF. (rancher/longhorn/kube-vip moved OUT of hands-off into tiers 5–6 per the 2026-11 audit)
 
