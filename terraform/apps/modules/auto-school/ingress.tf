@@ -21,10 +21,22 @@ resource "kubernetes_manifest" "auto_school_ir" {
             scheme = "http"
           }]
         },
+        # bypass route (matches live since the 2026-10 recorder cutover):
+        # session-ingest + recorder-heartbeat must skip authentik — headless
+        # recorders can't complete the forwardauth flow.
+        {
+          kind  = "Rule"
+          match = "Host(`school.vanderloch.com`) && (PathPrefix(`/api/ingest/session`) || PathPrefix(`/api/recorder/heartbeat`))"
+          services = [{
+            name   = "auto-school"
+            port   = 80
+            scheme = "http"
+          }]
+        },
         {
           kind        = "Rule"
           match       = "Host(`school.vanderloch.com`)"
-          middlewares = [{ name = "authentik-forwardauth" }]
+          middlewares = [{ name = "authentik-forwardauth" }, { name = "auto-school-edge-marker" }]
           services = [{
             name   = "auto-school"
             port   = 80
