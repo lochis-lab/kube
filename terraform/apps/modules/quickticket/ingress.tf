@@ -94,3 +94,70 @@ resource "kubernetes_manifest" "redis_dev_irtcp" {
     }
   }
 }
+
+# ---- HTTP app routes (added 2026-11) ---------------------------------------
+# One host per env; the SPA (web) serves /, the API is path-split under /api.
+# The frontend builds with no VITE_API_URL (same-origin ""), so no CORS is
+# involved. Same cert/entrypoint/class as the TCP routes above.
+
+resource "kubernetes_manifest" "qt_dev_ir" {
+  manifest = {
+    apiVersion = "traefik.io/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = "quickticket-dev"
+      namespace = var.namespace
+      annotations = {
+        "kubernetes.io/ingress.class" = "traefik-external"
+      }
+    }
+    spec = {
+      entryPoints = ["outbound"]
+      routes = [
+        {
+          kind  = "Rule"
+          match = "Host(`qt-dev.aerosol.dev`) && PathPrefix(`/api`)"
+          services = [{ name = "quickticket-dev", port = 8000, scheme = "http" }]
+        },
+        {
+          kind     = "Rule"
+          match    = "Host(`qt-dev.aerosol.dev`)"
+          priority = 1 # lower precedence than the /api rule
+          services = [{ name = "quickticket-dev-web", port = 80, scheme = "http" }]
+        }
+      ]
+      tls = { secretName = "aerosol-tls" } # *.aerosol.dev wildcard, Reflector
+    }
+  }
+}
+
+resource "kubernetes_manifest" "qt_prod_ir" {
+  manifest = {
+    apiVersion = "traefik.io/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = "quickticket-prod"
+      namespace = var.namespace
+      annotations = {
+        "kubernetes.io/ingress.class" = "traefik-external"
+      }
+    }
+    spec = {
+      entryPoints = ["outbound"]
+      routes = [
+        {
+          kind  = "Rule"
+          match = "Host(`quickticket.aerosol.dev`) && PathPrefix(`/api`)"
+          services = [{ name = "quickticket-prod", port = 8000, scheme = "http" }]
+        },
+        {
+          kind     = "Rule"
+          match    = "Host(`quickticket.aerosol.dev`)"
+          priority = 1
+          services = [{ name = "quickticket-prod-web", port = 80, scheme = "http" }]
+        }
+      ]
+      tls = { secretName = "aerosol-tls" }
+    }
+  }
+}
