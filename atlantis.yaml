@@ -9,6 +9,10 @@ projects:
     dir: terraform/platform
     autoplan: { when_modified: ["**/*.tf"] }
     apply_requirements: [mergeable, undiverged]
+  - name: terraform-longhorn
+    dir: terraform/longhorn
+    autoplan: { when_modified: ["**/*.tf"] }
+    apply_requirements: [mergeable, undiverged]
   - name: terraform-apps
     dir: terraform/apps
     autoplan: { when_modified: ["**/*.tf", "**/*.tftpl"] }
