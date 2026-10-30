@@ -10,30 +10,26 @@ resource "helm_release" "longhorn" {
   namespace  = "longhorn-system"
   repository = "https://charts.longhorn.io"
   chart      = "longhorn"
-  version    = "1.13.0" # app v1.9.2 — ADOPTION 2026-10-30: live raw-manifest install
-  # (deploy/longhorn.yaml v1.9.2) brought under helm without reinstall:
-  # all 40 chart-owned live objects (22 CRDs, manager DaemonSet, ui +
-  # driver-deployer Deployments, SAs/RBAC/Services/ConfigMaps/PriorityClass)
-  # were pre-stamped app.kubernetes.io/managed-by=Helm + meta.helm.sh/release-*
-  # so helm adopts them in place — zero pod restarts (verified: images/replicas
-  # identical chart-vs-live, CSI components stay deployer-owned, not chart-owned).
-  # Values intentionally EMPTY: settings live in Setting CRs the chart doesn't
-  # own; any future setting change must go through values.defaultSettings (a
-  # kubectl edit would be reverted by the next manager start). BackupTarget/
-  # RecurringJob are separately TF-owned kubernetes_manifests below. Upgrade
-  # path: chart bump PRs; engine upgrades ride longhorn's own engine-drain —
-  # TF must never force manager/engine restarts (no atomic, no wait timeouts).
+  version    = "1.13.0"
   values = []
+  # Engine auto-upgrade: without this (default 0) engines stay on old binaries
+  # after chart bumps (all 30 were still v1.9.2 after the 1.10.2→1.11.3 hops).
+  # 3 concurrent live engine upgrades per node; volumes are RF2.
+  values = [yamlencode({
+    defaultSettings = {
+      concurrentAutomaticEngineUpgradePerNodeLimit = 3
+    }
+    # 1.12.1 mitigation for longhorn#13804: default-on netpol misses
+    # host-originated CSI calls (kubelet attach/detach) — volumes silently
+    # fail to mount. Fixed upstream in 1.12.2; revisit then.
+    networkPolicies = {
+      restrictInternalTraffic = false
+    }
+
+  })]
 }
 
 # Backup target — Garage S3 (bucket "longhorn") served from a pve1 LXC.
-# Longhorn 1.9 configures targets via the BackupTarget CR (the old settings
-# backup-target / backup-target-credential-secret are gone); "default" existed
-# empty since install and was IMPORTED, not created. Credentials live in the
-# Secret below, values via TF_VARs from atlantis-app-vars (LONGHORN_BACKUP_*);
-# the endpoint URL is an infra detail and never appears in this repo.
-# Restore proof passed 2026-10-29 (backup → volume destroyed → restored,
-# checksums identical) — MIGRATIONS.md #24 gate evidence.
 resource "kubernetes_manifest" "longhorn_backuptarget" {
   field_manager {
     force_conflicts = true # longhorn-manager owns the seeded empty defaults

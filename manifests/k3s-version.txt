@@ -1,0 +1,6 @@
+# Pinned k3s version — single source of truth for cluster upgrades.
+# Renovate watches this line (regex manager) and opens a bump PR when a new
+# k3s release lands. Applying it is ALWAYS manual: one minor per maintenance
+# window, masters before agents, via ~/k3sup.sh <ip> on k3s-admin (the script
+# reads this file by default). Never two masters down at once.
+v1.34.12+k3s1
