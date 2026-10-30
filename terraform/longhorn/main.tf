@@ -18,6 +18,13 @@ resource "helm_release" "longhorn" {
     defaultSettings = {
       concurrentAutomaticEngineUpgradePerNodeLimit = 3
     }
+    # 1.12.1 mitigation for longhorn#13804: default-on netpol misses
+    # host-originated CSI calls (kubelet attach/detach) — volumes silently
+    # fail to mount. Fixed upstream in 1.12.2; revisit then.
+    networkPolicies = {
+      restrictInternalTraffic = false
+    }
+
   })]
 }
 
