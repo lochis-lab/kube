@@ -10,7 +10,7 @@ resource "helm_release" "longhorn" {
   namespace  = "longhorn-system"
   repository = "https://charts.longhorn.io"
   chart      = "longhorn"
-  version    = "1.9.2" # app v1.9.2 — ADOPTION 2026-10-30: live raw-manifest install
+  version    = "1.13.0" # app v1.9.2 — ADOPTION 2026-10-30: live raw-manifest install
   # (deploy/longhorn.yaml v1.9.2) brought under helm without reinstall:
   # all 40 chart-owned live objects (22 CRDs, manager DaemonSet, ui +
   # driver-deployer Deployments, SAs/RBAC/Services/ConfigMaps/PriorityClass)
