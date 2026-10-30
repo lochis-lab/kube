@@ -431,6 +431,15 @@ resource "helm_release" "traefik" {
   #     dashboard IngressRoute + basic-auth middleware in the ns are hand-made
   #     and unmanaged (see notes.md).
   values = [yamlencode({
+    # Pin the ingress VIP: metallb had allocated .170 dynamically and shuffled
+    # it to .168 during the 2026-10-30 k3s-upgrade speaker restarts — every
+    # internal DNS record in pihole (pihole_local_dns hosts) points at .170, so
+    # a silent VIP move takes down all internal hostnames. Static = no shuffle.
+    service = {
+      spec = {
+        loadBalancerIP = "192.168.10.170"
+      }
+    }
     additionalArguments = [
       "--serversTransport.insecureSkipVerify=true",
       "--log.level=INFO",
