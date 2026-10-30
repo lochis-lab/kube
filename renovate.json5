@@ -87,6 +87,36 @@
       datasourceTemplate: 'github-releases',
       extractVersionTemplate: '^v(?<version>.+)$',
     },
+    // --- Helm chart versions inside terraform helm_release blocks ----------
+    // The built-in terraform manager ignores chart/repository/version pairs, so
+    // every tf-managed chart (reflector, cloudflared, …) had to be bumped by
+    // hand. Order-dependent (repository → chart → version within ~80 chars).
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^terraform\\/(apps|platform|infra)\\/.*\\.tf$/',
+      ],
+      matchStrings: [
+        'repository\\s*=\\s*"(?<registryUrl>[^"]+)"[\\s\\S]{0,80}?chart\\s*=\\s*"(?<depName>[^"]+)"[\\s\\S]{0,40}?version\\s*=\\s*"(?<currentValue>[^"]+)"',
+      ],
+      datasourceTemplate: 'helm',
+    },
+    // --- cloudflared image tag (nested image = { tag = … } chart values) -----
+    // The repo:tag custom managers only match `image = "repo:tag"` strings;
+    // the cloudflare-tunnel-remote chart takes a nested tag with the repo
+    // baked into the chart. Date-shaped version keeps it off `version = 0.1.2`.
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^terraform\\/platform\\/cloudflare\\.tf$/',
+      ],
+      matchStrings: [
+        'tag\\s*=\\s*"(?<currentValue>\\d{4}\\.\\d+\\.\\d+)"',
+      ],
+      depNameTemplate: 'cloudflare/cloudflared',
+      datasourceTemplate: 'docker',
+      versioningTemplate: 'docker',
+    },
   ],
   packageRules: [
     // The built-in `terraform` manager also extracts `image = "…"` as a docker
