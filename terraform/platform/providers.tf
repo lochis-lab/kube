@@ -28,9 +28,9 @@ provider "helm" {
   kubernetes = {
     config_path = var.kubeconfig_path == "" ? null : var.kubeconfig_path
   }
-
-   provider "cloudflare" {
-     api_token = var.cloudflare_api_token
-   }
-
 }
+
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
+}
+
