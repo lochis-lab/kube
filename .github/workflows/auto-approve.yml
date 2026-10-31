@@ -1,0 +1,18 @@
+name: approve-own-prs
+# Atlantis apply gate: `approved` requires a non-author approval, and GitHub
+# forbids approving your own PR — so solo-applied changes would be stuck.
+# This approves PRs authored by Lochis (approval comes from the github-actions
+# bot, which counts as a non-author approval for Atlantis).
+# PRs from anyone/anything else (renovate, outsiders) get NO approval here,
+# keeping `atlantis apply` locked until a human approves.
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+jobs:
+  approve:
+    if: github.event.pull_request.user.login == 'Lochis'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: hmarr/auto-approve-action@v4
