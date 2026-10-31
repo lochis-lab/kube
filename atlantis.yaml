@@ -4,16 +4,12 @@ projects:
   - name: terraform-infra
     dir: terraform/infra
     autoplan: { when_modified: ["**/*.tf"] }
-    apply_requirements: [mergeable, undiverged]
   - name: terraform-platform
     dir: terraform/platform
     autoplan: { when_modified: ["**/*.tf"] }
-    apply_requirements: [mergeable, undiverged]
   - name: terraform-longhorn
     dir: terraform/longhorn
     autoplan: { when_modified: ["**/*.tf"] }
-    apply_requirements: [mergeable, undiverged]
   - name: terraform-apps
     dir: terraform/apps
     autoplan: { when_modified: ["**/*.tf", "**/*.tftpl"] }
-    apply_requirements: [mergeable, undiverged]

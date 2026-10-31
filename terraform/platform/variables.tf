@@ -73,3 +73,22 @@ variable "authentik_redis_password" {
   sensitive   = true
 }
 
+variable "cloudflare_api_token" {
+     description = "Cloudflare API token for tunnel + DNS management"
+     type        = string
+     sensitive   = true
+}
+
+variable "cloudflare_account_id" {
+  type    = string
+  default = "59e9e3e509b42b260d173faf0460db88"
+}
+variable "cloudflare_zone_id_vanderloch" {
+  type    = string
+  default = "cf59bab18b1db54225cfb87f172bbb98"
+}
+variable "cloudflare_zone_id_aerosol" {
+  type    = string
+  default = "c86918af21da70a6cd18df98753e41c4"
+}
+

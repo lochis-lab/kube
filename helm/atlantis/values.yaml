@@ -18,11 +18,13 @@ vcsSecretName: atlantis-vcs
 # TF state backend RBAC (Secret+Lease in ops ns) — chart-managed
 enableKubernetesBackend: true
 
-# server-side governance: allow repo config to pick workflows + apply requirements
+# server-side governance: apply gate (approved review) is enforced here and NOT
+# overridable from repo-side atlantis.yaml; repos may still pick workflows.
 repoConfig: |
   repos:
     - id: /.*/
-      allowed_overrides: [workflow, apply_requirements]
+      apply_requirements: [approved, mergeable, undiverged]
+      allowed_overrides: [workflow]
       allow_custom_workflows: true
 
 # tier-3 internal values injected at apply time (see atlantis.yaml apps workflow)
@@ -57,6 +59,8 @@ environmentSecrets:
     secretKeyRef: { name: atlantis-app-vars, key: LAVALINK_SPOTIFY_CLIENT_SECRET }
   - name: TF_VAR_lavalink_yt_oauth_refresh_token
     secretKeyRef: { name: atlantis-app-vars, key: LAVALINK_YT_OAUTH_REFRESH_TOKEN }
+  - name: TF_VAR_cloudflare_api_token
+    secretKeyRef: { name: atlantis-app-vars, key: CLOUDFLARE_API_TOKEN }
 
 environment:
   ATLANTIS_LOG_LEVEL: info
