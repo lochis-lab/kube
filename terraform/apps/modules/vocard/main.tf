@@ -49,7 +49,7 @@ resource "kubernetes_deployment_v1" "vocard_bot" {
         }
         container {
           name              = "vocard"
-          image             = "ghcr.io/lochis/vocard-spookic-wip:v2.7.3.2" # own image, renovate-disabled
+          image             = "ghcr.io/lochis/vocard-spookic-wip:v2.7.3.3" # own image, renovate-disabled; .3 = ipc ws in-cluster (v2459 baked URL died with CF tunnel)
           image_pull_policy = "Always"
           port {
             container_port = 8000
