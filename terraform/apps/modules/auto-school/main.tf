@@ -3,6 +3,31 @@ variable "namespace" { type = string }
 # Secrets stay unmanaged: auto-school-env, auto-school-pg, auto-school-basicauth
 # + reg-credentials-ghcr pull secret. All creds flow via secretKeyRef/envFrom.
 
+# Remote (S3) backups for the pg data volume. Declared here explicitly rather
+# than riding the cluster-wide "default" group catch-all (RecurringJob
+# daily-backup in terraform/longhorn, 07:00Z): coverage for this volume must
+# not depend on the mutator-stamped default group staying intact. The CRD has
+# no typed resource — kubernetes_manifest, same as terraform/longhorn. Cron
+# 04:30Z avoids both the ~03:00Z system-backup window and the 07:00Z
+# daily-backup sweep.
+resource "kubernetes_manifest" "auto_school_pg_backup_job" {
+  manifest = {
+    apiVersion = "longhorn.io/v1beta2"
+    kind       = "RecurringJob"
+    metadata = {
+      name      = "pg-backup"
+      namespace = "longhorn-system"
+    }
+    spec = {
+      name        = "pg-backup" # must match metadata.name
+      cron        = "30 4 * * *"
+      task        = "backup"
+      retain      = 7
+      concurrency = 1
+    }
+  }
+}
+
 resource "kubernetes_persistent_volume_claim_v1" "data" {
   metadata {
     name      = "auto-school-data"
@@ -21,6 +46,15 @@ resource "kubernetes_persistent_volume_claim_v1" "pgdata" {
   metadata {
     name      = "auto-school-pgdata"
     namespace = var.namespace
+    # Label-based RecurringJob binding: Longhorn's PVC mutator copies PVC
+    # labels onto the Volume CR, and the volume-side label
+    # recurring-job.longhorn.io/<job-name>: enabled selects the volume into
+    # kubernetes_manifest.auto_school_pg_backup_job below. The group-based
+    # alternative (recurring-job-group.longhorn.io/<group>) was rejected on
+    # purpose — job-name labels keep the per-volume binding explicit. Adding
+    # labels is an in-place PVC update (no resize/recreate): Postgres is
+    # unaffected, no pod restart.
+    labels = { "recurring-job.longhorn.io/pg-backup" = "enabled" }
   }
   spec {
     access_modes       = ["ReadWriteOnce"]
