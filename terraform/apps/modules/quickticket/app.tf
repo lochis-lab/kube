@@ -117,6 +117,11 @@ resource "kubernetes_deployment_v1" "api_dev" {
       }
     }
   }
+
+  # :dev is rollout-restarted by CI (restartedAt annotation) — ignore it so unrelated applies don't revert + re-roll the pods.
+  lifecycle {
+    ignore_changes = [spec[0].template[0].metadata[0].annotations["kubectl.kubernetes.io/restartedAt"]]
+  }
 }
 
 resource "kubernetes_service_v1" "api_dev" {
@@ -182,6 +187,11 @@ resource "kubernetes_deployment_v1" "web_dev" {
         }
       }
     }
+  }
+
+  # :dev is rollout-restarted by CI (restartedAt annotation) — ignore it so unrelated applies don't revert + re-roll the pods.
+  lifecycle {
+    ignore_changes = [spec[0].template[0].metadata[0].annotations["kubectl.kubernetes.io/restartedAt"]]
   }
 }
 
