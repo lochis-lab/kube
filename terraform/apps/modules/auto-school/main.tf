@@ -134,7 +134,10 @@ resource "kubernetes_deployment_v1" "auto_school" {
   }
   spec {
     # Recreate: single replica on an RWO Longhorn PVC.
-    replicas = 1
+    # Scaled to 0 on 2026-10-30 (post recorder-split + auth hardening): the
+    # recorder Deployment owns capture now; this is kept ONLY for rollback
+    # (kubectl -n auto-school scale deploy auto-school --replicas=1).
+    replicas = 0
     strategy {
       type = "Recreate"
     }
@@ -337,26 +340,20 @@ resource "kubernetes_deployment_v1" "auto_school_frontend" {
             value = "auto-school-admins"
           }
           env {
-            name  = "AUTHENTIK_API_URL"
-            value = "http://authentik-server.authentik.svc.cluster.local"
-          }
-          env {
-            name = "AUTHENTIK_API_TOKEN"
+            name = "EDGE_MARKER"
             value_from {
               secret_key_ref {
-                name     = "auto-school-env"
-                key      = "AUTHENTIK_API_TOKEN"
-                optional = true
+                name = "auto-school-env"
+                key  = "EDGE_MARKER"
               }
             }
           }
           env {
-            name = "EDGE_SECRET"
+            name = "INTERNAL_HMAC_KEY"
             value_from {
               secret_key_ref {
-                name     = "auto-school-env"
-                key      = "EDGE_SECRET"
-                optional = true
+                name = "auto-school-env"
+                key  = "INTERNAL_HMAC_KEY"
               }
             }
           }
@@ -535,12 +532,20 @@ resource "kubernetes_deployment_v1" "auto_school_recorder" {
             value = "autoschool"
           }
           env {
-            name = "EDGE_SECRET"
+            name = "INTERNAL_HMAC_KEY"
             value_from {
               secret_key_ref {
-                name     = "auto-school-env"
-                key      = "EDGE_SECRET"
-                optional = true
+                name = "auto-school-env"
+                key  = "INTERNAL_HMAC_KEY"
+              }
+            }
+          }
+          env {
+            name = "BROWSER_CHANNEL"
+            value_from {
+              secret_key_ref {
+                name = "auto-school-env"
+                key  = "BROWSER_CHANNEL"
               }
             }
           }
@@ -560,6 +565,16 @@ resource "kubernetes_deployment_v1" "auto_school_recorder" {
                 key      = "RECORDER_TOKEN"
                 optional = true
               }
+            }
+          }
+          env_from {
+            secret_ref {
+              name = "auto-school-env"
+            }
+          }
+          env_from {
+            secret_ref {
+              name = "auto-school-pg"
             }
           }
           readiness_probe {
