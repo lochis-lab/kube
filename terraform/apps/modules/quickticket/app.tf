@@ -95,6 +95,66 @@ resource "kubernetes_deployment_v1" "api_dev" {
             name  = "BACKEND__SECURITY__ALLOWED_HOSTS"
             value = "[\"qt-dev.aerosol.dev\"]"
           }
+          # OpenID + frontend redirects + proxy trust live in quickticket-secret-dev
+          # (restored 2026-10-31 after #132's codify dropped the old envFrom wiring)
+          env {
+            name = "BACKEND__OPENID__CLIENT_ID"
+            value_from {
+              secret_key_ref {
+                name = "quickticket-secret-dev"
+                key  = "BACKEND__OPENID__CLIENT_ID"
+              }
+            }
+          }
+          env {
+            name = "BACKEND__OPENID__CLIENT_SECRET"
+            value_from {
+              secret_key_ref {
+                name = "quickticket-secret-dev"
+                key  = "BACKEND__OPENID__CLIENT_SECRET"
+              }
+            }
+          }
+          env {
+            name = "BACKEND__OPENID__DISCOVERY_URL"
+            value_from {
+              secret_key_ref {
+                name = "quickticket-secret-dev"
+                key  = "BACKEND__OPENID__DISCOVERY_URL"
+              }
+            }
+          }
+          env {
+            name = "BACKEND__SECURITY__TRUSTED_PROXIES"
+            value_from {
+              secret_key_ref {
+                name = "quickticket-secret-dev"
+                key  = "BACKEND__SECURITY__TRUSTED_PROXIES"
+              }
+            }
+          }
+          env {
+            name = "BACKEND__FRONTEND__REDIRECT_URIS"
+            value_from {
+              secret_key_ref {
+                name = "quickticket-secret-dev"
+                key  = "BACKEND__FRONTEND__REDIRECT_URIS"
+              }
+            }
+          }
+          env {
+            name = "BACKEND__FRONTEND__DEFAULT_REDIRECT_URI"
+            value_from {
+              secret_key_ref {
+                name = "quickticket-secret-dev"
+                key  = "BACKEND__FRONTEND__DEFAULT_REDIRECT_URI"
+              }
+            }
+          }
+          env {
+            name  = "FORCE_COLOR"
+            value = "1"
+          }
           readiness_probe {
             tcp_socket {
               port = "http"
