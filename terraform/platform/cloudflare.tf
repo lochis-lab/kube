@@ -14,7 +14,13 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "lochis" {
   config = {
     ingress = [
       { hostname = "osutracker.vanderloch.com",
-        service  = "https://traefik.traefik.svc.cluster.local:2460" },
+        service  = "https://traefik.traefik.svc.cluster.local:2460",
+        origin_request = {
+          # SNI would default to the service hostname (traefik.traefik.svc…),
+          # which doesn't match the *.vanderloch.com cert traefik serves
+          # (x509 hostname mismatch → 502). Pin SNI to the public host.
+          origin_server_name = "osutracker.vanderloch.com"
+        } },
       { service = "http_status:404" }
     ]
   }
