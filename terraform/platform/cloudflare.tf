@@ -20,6 +20,34 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "lochis" {
   }
 }
 
+# cloudflared connector for the remotely-managed tunnel. Ingress rules live in
+# cloudflare_zero_trust_tunnel_cloudflared_config above; the chart only runs the
+# daemon (it wraps the token into a Secret + rolls pods on token change).
+resource "helm_release" "cloudflared" {
+  name             = "cloudflared"
+  namespace        = "cloudflare"
+  create_namespace = true
+
+  repository = "https://cloudflare.github.io/helm-charts"
+  chart      = "cloudflare-tunnel-remote"
+  version    = "0.1.2"
+
+  values = [yamlencode({
+    replicaCount = 2
+    image        = { tag = "2026.10.7" }   # chart default is 'latest' — pin it
+    cloudflare   = {
+      tunnel_token = base64encode(jsonencode({
+        a = cloudflare_zero_trust_tunnel_cloudflared.lochis.account_tag
+        t = cloudflare_zero_trust_tunnel_cloudflared.lochis.id
+        s = base64sha256(random_password.tunnel_secret_seed.result)
+      }))
+    }
+  })]
+
+  wait    = true
+  timeout = 300
+}
+
 resource "cloudflare_dns_record" "osutracker" {
   zone_id = var.cloudflare_zone_id_vanderloch
   name    = "osutracker"
