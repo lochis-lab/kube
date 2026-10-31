@@ -68,6 +68,51 @@ resource "cloudflare_dns_record" "osutracker" {
   proxied = true
 }
 
+resource "cloudflare_dns_record" "spookic" {
+  zone_id = var.cloudflare_zone_id_vanderloch
+  name    = "spookic"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
+  type    = "CNAME"
+  ttl     = 1
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "paloch" {
+  zone_id = var.cloudflare_zone_id_vanderloch
+  name    = "paloch"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
+  type    = "CNAME"
+  ttl     = 1
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "abs" {
+  zone_id = var.cloudflare_zone_id_vanderloch
+  name    = "abs"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
+  type    = "CNAME"
+  ttl     = 1
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "qt-dev" {
+  zone_id = var.cloudflare_zone_id_aerosol
+  name    = "qt-dev"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
+  type    = "CNAME"
+  ttl     = 1
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "quickticket" {
+  zone_id = var.cloudflare_zone_id_aerosol
+  name    = "quickticket"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
+  type    = "CNAME"
+  ttl     = 1
+  proxied = true
+}
+
 output "tunnel_token" {
   # v5 provider dropped the `.token` attribute — the token is just base64 JSON
   # {a: account_tag, t: tunnel id, s: secret}; rebuild it from known values.
