@@ -12,15 +12,20 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "lochis" {
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.lochis.id
 
   config = {
+    # move to have vanderloch.com as top level origin server name
+    # ingresses don't have to necessarily match the TLS handshake that cloudflare tunnel does
+    # vanderloch.com can do the handshake for aerosol.dev too
+    origin_request = {
+      origin_server_name = "vanderloch.com"
+    }
     ingress = [
-      { hostname = "osutracker.vanderloch.com",
-        service  = "https://traefik.traefik.svc.cluster.local:2460",
-        origin_request = {
-          # SNI would default to the service hostname (traefik.traefik.svc…),
-          # which doesn't match the *.vanderloch.com cert traefik serves
-          # (x509 hostname mismatch → 502). Pin SNI to the public host.
-          origin_server_name = "osutracker.vanderloch.com"
-        } },
+      { hostname = "osutracker.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2460"},
+      { hostname = "spookic.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2460"},
+      { hostname = "paloch.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2460"},
+      { hostname = "abs.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2459"},
+
+      { hostname = "qt-dev.aerosol.dev", service  = "https://traefik.traefik.svc.cluster.local:2459"},
+      { hostname = "quickticket.aerosol.dev", service  = "https://traefik.traefik.svc.cluster.local:2459"},
       { service = "http_status:404" }
     ]
   }
