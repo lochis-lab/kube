@@ -21,7 +21,11 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "lochis" {
     ingress = [
       { hostname = "osutracker.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2460"},
       { hostname = "spookic.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2460"},
+      { hostname = "paloch.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2460"},
+      { hostname = "abs.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2459"},
 
+      { hostname = "qt-dev.aerosol.dev", service  = "https://traefik.traefik.svc.cluster.local:2459"},
+      { hostname = "quickticket.aerosol.dev", service  = "https://traefik.traefik.svc.cluster.local:2459"},
       { service = "http_status:404" }
     ]
   }
