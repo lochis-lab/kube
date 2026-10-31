@@ -29,10 +29,13 @@ resource "kubernetes_manifest" "auto_school_ir" {
         },
         # bypass route (matches live since the 2026-10 recorder cutover):
         # session-ingest + recorder-heartbeat must skip authentik — headless
-        # recorders can't complete the forwardauth flow.
+        # recorders can't complete the forwardauth flow. priority pinned to 100
+        # (live drift guard): keep the explicit value so TF applies don't strip
+        # it down to Traefik's auto-calculated priority.
         {
-          kind  = "Rule"
-          match = "Host(`school.vanderloch.com`) && (PathPrefix(`/api/ingest/session`) || PathPrefix(`/api/recorder/heartbeat`))"
+          kind     = "Rule"
+          match    = "Host(`school.vanderloch.com`) && (PathPrefix(`/api/ingest/session`) || PathPrefix(`/api/recorder/heartbeat`))"
+          priority = 100
           services = [{
             name   = "auto-school"
             port   = 80
