@@ -208,7 +208,8 @@ resource "kubernetes_deployment_v1" "api_prod" {
     labels    = { app = "quickticket-prod" }
   }
   spec {
-    replicas = 1
+    # 0 replicas for now, we do not have a pinned version e.g. v1.0.0
+    replicas = 0
     strategy {
       type = "Recreate"
     }
@@ -309,7 +310,8 @@ resource "kubernetes_deployment_v1" "web_prod" {
     labels    = { app = "quickticket-prod-web" }
   }
   spec {
-    replicas = 1
+    # same as before
+    replicas = 0
     selector {
       match_labels = { app = "quickticket-prod-web" }
     }
