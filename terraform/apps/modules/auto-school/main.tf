@@ -711,3 +711,36 @@ resource "kubernetes_service_v1" "authentik_outpost" {
     }
   }
 }
+
+# Adopted from a hand-applied object (2026-10-30 recorder cutover) so a
+# namespace recreation can't silently kill recorder heartbeats. Matches the
+# live spec exactly: recorder pods only accept :7800 traffic from frontend
+# pods. EXISTS LIVE — import before first apply (Atlantis apply fails with
+# AlreadyExists otherwise):
+#   terraform -chdir=terraform/apps import \
+#     'module.auto_school.kubernetes_network_policy_v1.auto_school_recorder_ingress' \
+#     auto-school/auto-school-recorder-ingress
+resource "kubernetes_network_policy_v1" "auto_school_recorder_ingress" {
+  metadata {
+    name      = "auto-school-recorder-ingress"
+    namespace = var.namespace
+    labels    = { app = "auto-school-recorder" }
+  }
+  spec {
+    pod_selector {
+      match_labels = { app = "auto-school-recorder" }
+    }
+    policy_types = ["Ingress"]
+    ingress {
+      from {
+        pod_selector {
+          match_labels = { app = "auto-school-frontend" }
+        }
+      }
+      ports {
+        port     = "7800"
+        protocol = "TCP"
+      }
+    }
+  }
+}
