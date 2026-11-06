@@ -95,7 +95,7 @@ resource "kubernetes_deployment_v1" "omniroute" {
         container {
           name = "omniroute"
           # :latest tags — digest-pinned to running images (Renovate offers bumps)
-          image             = "docker.io/diegosouzapw/omniroute@sha256:b08a12e876baa8a5ccadd1ebbe346fe7267dba3b1c9f4fd6bb02070fae41ab6c"
+          image             = "docker.io/diegosouzapw/omniroute@sha256:b52a17661a1aff42ffb78f349f423e986dfc55b57274f28559f8387622ef8ee4"
           image_pull_policy = "Always"
           port {
             container_port = 20128
