@@ -105,7 +105,7 @@ resource "helm_release" "pihole" {
   namespace  = "default"
   repository = "https://mojo2600.github.io/pihole-kubernetes/"
   chart      = "pihole"
-  version    = "2.38.0"
+  version    = "2.39.0"
 
   values = [yamlencode({
     persistentVolumeClaim = {
