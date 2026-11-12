@@ -19,13 +19,14 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "lochis" {
       origin_server_name = "vanderloch.com"
     }
     ingress = [
-      { hostname = "osutracker.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2460"},
-      { hostname = "spookic.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2459"},
-      { hostname = "paloch.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2460"},
-      { hostname = "abs.vanderloch.com", service  = "https://traefik.traefik.svc.cluster.local:2459"},
+      { hostname = "osutracker.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2460" },
+      { hostname = "spookic.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
+      { hostname = "paloch.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2460" },
+      { hostname = "abs.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
+      { hostname = "school.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
 
-      { hostname = "qt-dev.aerosol.dev", service  = "https://traefik.traefik.svc.cluster.local:2459"},
-      { hostname = "quickticket.aerosol.dev", service  = "https://traefik.traefik.svc.cluster.local:2459"},
+      { hostname = "qt-dev.aerosol.dev", service = "https://traefik.traefik.svc.cluster.local:2459" },
+      { hostname = "quickticket.aerosol.dev", service = "https://traefik.traefik.svc.cluster.local:2459" },
       { service = "http_status:404" }
     ]
   }
@@ -45,8 +46,8 @@ resource "helm_release" "cloudflared" {
 
   values = [yamlencode({
     replicaCount = 2
-    image        = { tag = "2026.10.7" }   # chart default is 'latest' — pin it
-    cloudflare   = {
+    image        = { tag = "2026.10.7" } # chart default is 'latest' — pin it
+    cloudflare = {
       tunnel_token = base64encode(jsonencode({
         a = cloudflare_zero_trust_tunnel_cloudflared.lochis.account_tag
         t = cloudflare_zero_trust_tunnel_cloudflared.lochis.id
@@ -64,7 +65,7 @@ resource "cloudflare_dns_record" "osutracker" {
   name    = "osutracker"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
   type    = "CNAME"
-  ttl     = 1      # 1 = 'automatic' (proxied records are Auto anyway)
+  ttl     = 1 # 1 = 'automatic' (proxied records are Auto anyway)
   proxied = true
 }
 
@@ -89,6 +90,23 @@ resource "cloudflare_dns_record" "paloch" {
 resource "cloudflare_dns_record" "abs" {
   zone_id = var.cloudflare_zone_id_vanderloch
   name    = "abs"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
+  type    = "CNAME"
+  ttl     = 1
+  proxied = true
+}
+
+# school (auto-school) — Cutover note: the zone currently has a GREY A record
+# for `school` pointing at the WAN IP (direct :2459 DNAT). The CF API rejects
+# creating this CNAME while that A record exists — delete the grey A in the
+# dashboard FIRST, then `atlantis apply -p terraform-platform`. Rollback =
+# delete this record + recreate the grey A (site serves on :2459 again).
+# Ordering with the app: the IngressRoute already binds entrypoint `outbound`
+# with the authentik forwardauth chain — unchanged by this PR (clerk flip is
+# a later, separate change; see auto-school docs/planning/clerk-migration.md §9).
+resource "cloudflare_dns_record" "school" {
+  zone_id = var.cloudflare_zone_id_vanderloch
+  name    = "school"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
   type    = "CNAME"
   ttl     = 1
