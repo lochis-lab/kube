@@ -28,7 +28,6 @@ variable "pihole_local_dns" {
     "192.168.10.170 registry.vanderloch.com",
     "192.168.10.170 registry.kubero.vanderloch.com",
     "192.168.10.170 n8n.vanderloch.com",
-    "192.168.10.170 omniroute.vanderloch.com",
     "192.168.10.170 ha.vanderloch.com",
     "192.168.10.170 firecrawl.vanderloch.com",
     "192.168.10.170 headscale.vanderloch.com",
