@@ -239,11 +239,6 @@ resource "helm_release" "traefik" {
   version    = "42.4.0"
 
   values = [yamlencode({
-       service = {
-      spec = {
-        loadBalancerIP = "192.168.10.170"
-      }
-    }
     additionalArguments = [
       "--serversTransport.insecureSkipVerify=true",
       "--log.level=INFO",
@@ -330,7 +325,13 @@ resource "helm_release" "traefik" {
     }
     service = {
       enabled = true
-      type    = "LoadBalancer"
+      spec = {
+        # chart 42.x: type + loadBalancerIP both live under service.spec
+        # (schema rejects top-level `type`; old `spec`-only form lost the IP
+        # when it collided with the second `service` key — keep ONE block)
+        type           = "LoadBalancer"
+        loadBalancerIP = "192.168.10.170"
+      }
     }
   })]
 
