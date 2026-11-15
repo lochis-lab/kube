@@ -24,6 +24,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "lochis" {
       { hostname = "paloch.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2460" },
       { hostname = "abs.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
       { hostname = "school.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
+      { hostname = "devschool.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
 
       { hostname = "qt-dev.aerosol.dev", service = "https://traefik.traefik.svc.cluster.local:2459" },
       { hostname = "quickticket.aerosol.dev", service = "https://traefik.traefik.svc.cluster.local:2459" },
@@ -107,6 +108,20 @@ resource "cloudflare_dns_record" "abs" {
 resource "cloudflare_dns_record" "school" {
   zone_id = var.cloudflare_zone_id_vanderloch
   name    = "school"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
+  type    = "CNAME"
+  ttl     = 1
+  proxied = true
+}
+
+# devschool (auto-school DEV) — the homelab dev environment
+# (frontend-dev deployment, authentik auth, homelab PG, dev R2 bucket
+# `dev-autoschool-media`). Same 2459 outbound entrypoint as prod; traefik
+# routes by Host to the auto-school-dev IngressRoute. No grey-A conflict:
+# the subdomain is new, so the CNAME creates cleanly.
+resource "cloudflare_dns_record" "devschool" {
+  zone_id = var.cloudflare_zone_id_vanderloch
+  name    = "devschool"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
   type    = "CNAME"
   ttl     = 1
