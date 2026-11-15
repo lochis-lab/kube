@@ -94,15 +94,6 @@ resource "kubernetes_namespace_v1" "vocard" {
   }
 }
 
-resource "kubernetes_namespace_v1" "omniroute" {
-  metadata {
-    name = "omniroute"
-  }
-  lifecycle {
-    ignore_changes = [metadata[0].annotations]
-  }
-}
-
 resource "kubernetes_namespace_v1" "auto_school" {
   metadata {
     name = "auto-school"

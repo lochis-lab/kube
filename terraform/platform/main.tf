@@ -6,7 +6,7 @@ resource "helm_release" "reflector" {
   namespace  = "reflector"
   repository = "https://emberstack.github.io/helm-charts"
   chart      = "reflector"
-  version    = "10.0.70"
+  version    = "10.0.77"
   wait    = true
   timeout = 300
 
@@ -105,7 +105,7 @@ resource "helm_release" "pihole" {
   namespace  = "default"
   repository = "https://mojo2600.github.io/pihole-kubernetes/"
   chart      = "pihole"
-  version    = "2.38.0"
+  version    = "2.39.0"
 
   values = [yamlencode({
     persistentVolumeClaim = {
@@ -236,14 +236,9 @@ resource "helm_release" "traefik" {
   namespace  = "traefik"
   repository = "https://helm.traefik.io/traefik"
   chart      = "traefik"
-  version    = "42.2.0"
+  version    = "42.4.0"
 
   values = [yamlencode({
-       service = {
-      spec = {
-        loadBalancerIP = "192.168.10.170"
-      }
-    }
     additionalArguments = [
       "--serversTransport.insecureSkipVerify=true",
       "--log.level=INFO",
@@ -330,7 +325,13 @@ resource "helm_release" "traefik" {
     }
     service = {
       enabled = true
-      type    = "LoadBalancer"
+      spec = {
+        # chart 42.x: type + loadBalancerIP both live under service.spec
+        # (schema rejects top-level `type`; old `spec`-only form lost the IP
+        # when it collided with the second `service` key — keep ONE block)
+        type           = "LoadBalancer"
+        loadBalancerIP = "192.168.10.170"
+      }
     }
   })]
 
@@ -344,7 +345,7 @@ resource "helm_release" "metallb" {
   namespace  = "metallb-system"
   repository = "https://metallb.github.io/metallb"
   chart      = "metallb"
-  version    = "0.16.1" # app v0.16.1 — bumped from 0.13.12 on 2026-10-29 (CRD ceremony below)
+  version    = "0.16.2" # app v0.16.1 — bumped from 0.13.12 on 2026-10-29 (CRD ceremony below)
 
   # Only live non-defaults: pod scrape annotations (prometheus.io/port=7472
   # metrics endpoints) and frrk8s.enabled=false (0.16 defaults the frr-k8s BGP
