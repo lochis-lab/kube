@@ -23,7 +23,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "lochis" {
       { hostname = "spookic.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
       { hostname = "paloch.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2460" },
       { hostname = "abs.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
-      { hostname = "school.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
+      # old, should be on opennext cloudflare now { hostname = "school.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
       { hostname = "devschool.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
 
       { hostname = "qt-dev.aerosol.dev", service = "https://traefik.traefik.svc.cluster.local:2459" },
