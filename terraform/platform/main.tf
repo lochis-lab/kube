@@ -6,7 +6,7 @@ resource "helm_release" "reflector" {
   namespace  = "reflector"
   repository = "https://emberstack.github.io/helm-charts"
   chart      = "reflector"
-  version    = "10.0.70"
+  version    = "10.0.77"
   wait    = true
   timeout = 300
 
