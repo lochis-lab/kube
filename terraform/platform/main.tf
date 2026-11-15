@@ -344,7 +344,7 @@ resource "helm_release" "metallb" {
   namespace  = "metallb-system"
   repository = "https://metallb.github.io/metallb"
   chart      = "metallb"
-  version    = "0.16.1" # app v0.16.1 — bumped from 0.13.12 on 2026-10-29 (CRD ceremony below)
+  version    = "0.16.2" # app v0.16.1 — bumped from 0.13.12 on 2026-10-29 (CRD ceremony below)
 
   # Only live non-defaults: pod scrape annotations (prometheus.io/port=7472
   # metrics endpoints) and frrk8s.enabled=false (0.16 defaults the frr-k8s BGP
