@@ -27,6 +27,13 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "lochis" {
       # the production server again; the vinext Worker is being retired.
       { hostname = "school.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
       { hostname = "devschool.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
+      # k3s revival 2026-11-16: authentik auth host moves onto the tunnel —
+      # forward-auth was broken by stale :2459 in the authentik provider
+      # external_host / outpost authentik_host / tenant base_url (all fixed
+      # to clean URLs 2026-11-16), so auth must now answer on 443. The manual
+      # A record for auth.vanderloch.com must be removed before/at apply —
+      # A + proxied CNAME cannot coexist.
+      { hostname = "auth.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
 
       { hostname = "qt-dev.aerosol.dev", service = "https://traefik.traefik.svc.cluster.local:2459" },
       { hostname = "quickticket.aerosol.dev", service = "https://traefik.traefik.svc.cluster.local:2459" },
@@ -110,6 +117,21 @@ resource "cloudflare_dns_record" "abs" {
 resource "cloudflare_dns_record" "school" {
   zone_id = var.cloudflare_zone_id_vanderloch
   name    = "school"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
+  type    = "CNAME"
+  ttl     = 1
+  proxied = true
+}
+
+# auth (authentik) — k3s revival 2026-11-16: the forward-auth flow redirects
+# unauthenticated requests to https://auth.vanderloch.com (no port, all three
+# stale :2459 configs fixed in authentik). Served by the authentik IngressRoute
+# in ns authentik via traefik websecure (2459), same shape as school.
+# The dashboard-created A record for this name must be removed first —
+# A + proxied CNAME cannot coexist on the same record name.
+resource "cloudflare_dns_record" "auth" {
+  zone_id = var.cloudflare_zone_id_vanderloch
+  name    = "auth"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
   type    = "CNAME"
   ttl     = 1
