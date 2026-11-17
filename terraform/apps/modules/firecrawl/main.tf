@@ -217,7 +217,7 @@ resource "kubernetes_deployment_v1" "playwright_service" {
         }
         container {
           name            = "playwright-service"
-          image           = "ghcr.io/firecrawl/playwright-service@sha256:637fb8c8399634b02c2179da72566ce11644435e5d93e895bdbde4b1f9b0882a"
+          image           = "ghcr.io/firecrawl/playwright-service@sha256:227ce3d8059173925a5a0697c63a1e947662cca934a609151651f578774edd5d"
           image_pull_policy = "Always"
           security_context {
             allow_privilege_escalation = false
