@@ -144,7 +144,7 @@ resource "kubernetes_deployment_v1" "n8n" {
           name = "n8n"
           # Rolling :latest tag — digest-pinned to the running image; Renovate
           # offers digest bumps (same as cloudreve/searxng).
-          image             = "docker.io/n8nio/n8n@sha256:9a8d8dcea75667496695d7810d7e1fe018a65efb36cc499d347f3931b3957b5d"
+          image             = "docker.io/n8nio/n8n@sha256:63bdcfdea7e0d21152a7ad8f62e6622658c5eae3835e7515dbd9b610cdb76111"
           image_pull_policy = "Always"
           port {
             name           = "http"

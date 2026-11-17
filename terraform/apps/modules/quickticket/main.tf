@@ -82,7 +82,7 @@ resource "kubernetes_deployment_v1" "postgres_dev" {
         enable_service_links            = false # matches live
         container {
           name              = "postgres"
-          image             = "postgres:18.6-alpine" # live tag kept as-is
+          image             = "postgres:18.7-alpine" # live tag kept as-is
           image_pull_policy = "IfNotPresent"
           port {
             name           = "pg"
@@ -205,7 +205,7 @@ resource "kubernetes_deployment_v1" "postgres_prod" {
         enable_service_links            = false
         container {
           name              = "postgres"
-          image             = "postgres:18.6-alpine" # same as dev
+          image             = "postgres:18.7-alpine" # same as dev
           image_pull_policy = "IfNotPresent"
           port {
             name           = "pg"
