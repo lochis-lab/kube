@@ -129,3 +129,12 @@ resource "kubernetes_namespace_v1" "quickticket" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "opengym" {
+  metadata {
+    name = "opengym"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
