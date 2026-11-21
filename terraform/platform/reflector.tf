@@ -13,6 +13,10 @@
 resource "kubernetes_annotations" "lochis_tls_reflector" {
   api_version = "v1"
   kind        = "Secret"
+  # force: the two namespace-list annotations are registered to field manager
+  # `kubectl-patch` (the historical manual `kubectl annotate` this resource
+  # replaces). Steal ownership — git manages these keys from now on.
+  force = true
   metadata {
     name      = "lochis-tls"
     namespace = "traefik"
