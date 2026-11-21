@@ -214,6 +214,15 @@ resource "kubernetes_deployment_v1" "opengym_web" {
           port {
             container_port = 80
           }
+          # The image's nginx template defaults to Docker's embedded DNS
+          # (127.0.0.11) for the /api proxy resolver — nothing answers there
+          # in k8s, so every /api request hung. Upstream-sanctioned switch
+          # (15-local-resolvers.envsh): read the nameservers from
+          # /etc/resolv.conf instead -> kube-dns, no IP hardcoded.
+          env {
+            name  = "NGINX_ENTRYPOINT_LOCAL_RESOLVERS"
+            value = "1"
+          }
           # /api/health proxies through nginx to Service `api` — gates pod
           # readiness on the whole chain (compose's depends_on equivalent).
           readiness_probe {
