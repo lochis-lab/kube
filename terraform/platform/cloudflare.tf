@@ -34,6 +34,9 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "lochis" {
       # A record for auth.vanderloch.com must be removed before/at apply —
       # A + proxied CNAME cannot coexist.
       { hostname = "auth.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
+      # opengym: passkey workout tracker (ns opengym). Clean 443 — passkeys
+      # bind to RP_ID gym.vanderloch.com, so no port-suffixed origin.
+      { hostname = "gym.vanderloch.com", service = "https://traefik.traefik.svc.cluster.local:2459" },
 
       { hostname = "qt-dev.aerosol.dev", service = "https://traefik.traefik.svc.cluster.local:2459" },
       { hostname = "quickticket.aerosol.dev", service = "https://traefik.traefik.svc.cluster.local:2459" },
@@ -146,6 +149,18 @@ resource "cloudflare_dns_record" "auth" {
 resource "cloudflare_dns_record" "devschool" {
   zone_id = var.cloudflare_zone_id_vanderloch
   name    = "devschool"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
+  type    = "CNAME"
+  ttl     = 1
+  proxied = true
+}
+
+# gym (opengym) — new subdomain, no grey-A conflict expected (cf. school note
+# above if the CNAME create is rejected: a dashboard A record must be deleted
+# before a proxied CNAME can exist on the same name).
+resource "cloudflare_dns_record" "opengym" {
+  zone_id = var.cloudflare_zone_id_vanderloch
+  name    = "gym"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.lochis.id}.cfargotunnel.com"
   type    = "CNAME"
   ttl     = 1

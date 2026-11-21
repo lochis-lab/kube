@@ -91,3 +91,10 @@ module "pelican" {
   source    = "./modules/pelican"
   namespace = kubernetes_namespace_v1.pelican.metadata[0].name
 }
+
+# openGym — passkey workout tracker, no secrets required (RP_ID/ORIGIN are
+# public config). Tunnel route + DNS live in terraform/platform.
+module "opengym" {
+  source    = "./modules/opengym"
+  namespace = kubernetes_namespace_v1.opengym.metadata[0].name
+}
