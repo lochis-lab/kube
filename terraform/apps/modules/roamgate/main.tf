@@ -49,7 +49,7 @@ resource "kubernetes_endpoints_v1" "roamgate" {
       ip = var.roamgate_vm_ip
     }
     port {
-      number = var.roamgate_port
+      port = var.roamgate_port
     }
   }
 }
