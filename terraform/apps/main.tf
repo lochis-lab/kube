@@ -98,3 +98,10 @@ module "opengym" {
   source    = "./modules/opengym"
   namespace = kubernetes_namespace_v1.opengym.metadata[0].name
 }
+
+# Roamgate — herdr web client on the happy-agent-01 VM (tailnet-only publish;
+# ExternalName + IngressRoute, upstream DNS record in platform pihole_local_dns).
+module "roamgate" {
+  source    = "./modules/roamgate"
+  namespace = kubernetes_namespace_v1.roamgate.metadata[0].name
+}

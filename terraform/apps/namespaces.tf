@@ -138,3 +138,12 @@ resource "kubernetes_namespace_v1" "opengym" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "roamgate" {
+  metadata {
+    name = "roamgate"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
