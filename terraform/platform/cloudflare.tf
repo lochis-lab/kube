@@ -59,7 +59,7 @@ resource "helm_release" "cloudflared" {
 
   values = [yamlencode({
     replicaCount = 2
-    image        = { tag = "2026.11.0" } # chart default is 'latest' — pin it
+    image        = { tag = "2026.11.1" } # chart default is 'latest' — pin it
     cloudflare = {
       tunnel_token = base64encode(jsonencode({
         a = cloudflare_zero_trust_tunnel_cloudflared.lochis.account_tag
