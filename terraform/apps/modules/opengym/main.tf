@@ -190,7 +190,7 @@ resource "kubernetes_deployment_v1" "opengym_web" {
         # $$ escapes to literal $ in heredocs.
         init_container {
           name    = "fetch-media"
-          image   = "alpine/git@sha256:2306e2b05ee0ef99f5d25b0779f645b24ae9f91ba187107503592fcdfe78da3a" # 2.54.1
+          image   = "alpine/git@sha256:29cff25811f790b9f72fc266bf8009a5a911714c0e03c31c47339c50909d9aef" # 2.54.1
           command = ["/bin/sh", "-c", <<-EOT
             mkdir -p /media/img /media/gif
             if [ -z "$$(ls -A /media/img 2>/dev/null)" ]; then

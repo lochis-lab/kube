@@ -47,7 +47,7 @@ resource "kubernetes_deployment_v1" "audiobookshelf" {
       spec {
         container {
           name  = "audiobookshelf"
-          image = "ghcr.io/advplyr/audiobookshelf:2.37.2"
+          image = "ghcr.io/advplyr/audiobookshelf:2.38.0"
           env {
       name = "TZ"
       value = "America/Toronto"
