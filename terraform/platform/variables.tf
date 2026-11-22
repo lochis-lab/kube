@@ -31,6 +31,11 @@ variable "pihole_local_dns" {
     "192.168.10.170 ha.vanderloch.com",
     "192.168.10.170 firecrawl.vanderloch.com",
     "192.168.10.170 headscale.vanderloch.com",
+    # tailscale-only: roamgate (herdr web client) on the happy-agent-01 VM;
+    # roam rides Traefik .170:443 like everything else, the VM record is the
+    # ExternalName upstream the roamgate module dials
+    "192.168.10.170 roam.vanderloch.com",
+    "100.64.0.87 happy-agent-01.vanderloch.com",
   ]
 }
 
