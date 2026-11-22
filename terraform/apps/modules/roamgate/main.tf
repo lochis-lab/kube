@@ -32,8 +32,8 @@ resource "kubernetes_service_v1" "roamgate" {
   }
   spec {
     port {
-      port       = var.roamgate_port
-      targetPort = var.roamgate_port
+      port        = var.roamgate_port
+      target_port = var.roamgate_port
     }
     # selector-less: endpoints are managed manually below
   }
