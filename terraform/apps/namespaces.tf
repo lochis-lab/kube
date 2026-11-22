@@ -147,3 +147,12 @@ resource "kubernetes_namespace_v1" "roamgate" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "ntfy" {
+  metadata {
+    name = "ntfy"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}

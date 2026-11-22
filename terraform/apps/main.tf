@@ -105,3 +105,9 @@ module "roamgate" {
   source    = "./modules/roamgate"
   namespace = kubernetes_namespace_v1.roamgate.metadata[0].name
 }
+
+# ntfy — tailnet-only push notifications (see modules/ntfy/main.tf header)
+module "ntfy" {
+  source    = "./modules/ntfy"
+  namespace = kubernetes_namespace_v1.ntfy.metadata[0].name
+}
