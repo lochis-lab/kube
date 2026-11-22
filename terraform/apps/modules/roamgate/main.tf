@@ -21,6 +21,6 @@ resource "kubernetes_service_v1" "roamgate" {
   }
   spec {
     type         = "ExternalName"
-    externalName = var.roamgate_upstream
+    external_name = var.roamgate_upstream
   }
 }
