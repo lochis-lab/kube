@@ -146,6 +146,11 @@ resource "kubernetes_deployment_v1" "mattermost" {
     template {
       metadata { labels = { app = "mattermost" } }
       spec {
+        # mattermost runs as UID 2000; fresh PVCs mount root-owned — without
+        # fsGroup the pod crashloops on /mattermost/data writes.
+        security_context {
+          fs_group = 2000
+        }
         container {
           name  = "mattermost"
           image = local.mm_img
