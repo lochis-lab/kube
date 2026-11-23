@@ -30,7 +30,12 @@ resource "kubernetes_deployment_v1" "headscale" {
     }
     template {
       metadata {
-        labels = { app = "headscale" }
+        labels      = { app = "headscale" }
+        annotations = {
+          # headscale has no config hot-reload: roll the pod when config.yaml
+          # changes (split-DNS fix 2026-11-23, phone NXDOMAIN shadowing).
+          "config/checksum" = sha256(kubernetes_config_map_v1.config.data["config.yaml"])
+        }
       }
       spec {
         # portainer-era pod defaults preserved as-live (n8n/omniroute lesson)
