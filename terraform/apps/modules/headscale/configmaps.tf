@@ -35,12 +35,15 @@ resource "kubernetes_config_map_v1" "config" {
           - 192.168.10.166
           - 1.1.1.1
         split:
-          # tailnet-only zone: answered ONLY by Pi-hole. Without this, a slow
+          # tailnet-only zone: Pi-hole answers authoritatively when up; 1.1.1.1
+          # as second resolver keeps PUBLIC records under vanderloch.com
+          # (auth/school/headscale — used outbound by tailnet clients)
+          # resolvable even if Pi-hole is down. Without the split, a slow
           # Pi-hole response makes roaming clients fall back to 1.1.1.1, where
-          # the PUBLIC vanderloch.com zone NXDOMAINs internal names
-          # (roam/ntfy/*.vanderloch.com) — "offline" apps on phones.
+          # the public zone NXDOMAINs internal names (roam/ntfy) — "offline".
           vanderloch.com:
             - 192.168.10.166
+            - 1.1.1.1
       search_domains:
         - vanderloch.com
 
