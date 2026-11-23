@@ -54,6 +54,16 @@ resource "kubernetes_deployment_v1" "ntfy" {
             name  = "NTFY_BASE_URL"
             value = "https://ntfy.vanderloch.com"
           }
+          env {
+            # iOS instant delivery: without an APNs-connected upstream, iOS
+            # delivers only on app-wake (minutes-to-hours late). What transits
+            # ntfy.sh: a contentless poll_request — message ID + SHA-256 of
+            # the topic name; the upstream body is literally "New message".
+            # Real content is always fetched from THIS server (tailnet).
+            # base-url must exactly match the server URL in the iOS app.
+            name  = "NTFY_UPSTREAM_BASE_URL"
+            value = "https://ntfy.sh"
+          }
           resources {
             requests = {
               cpu    = "50m"
