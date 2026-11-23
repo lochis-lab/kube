@@ -28,7 +28,7 @@ resource "kubernetes_config_map_v1" "config" {
         enabled: false
 
     dns:
-      magic_dns: false
+      magic_dns: true
       base_domain: headscale.internal
       nameservers:
         global:
@@ -46,6 +46,31 @@ resource "kubernetes_config_map_v1" "config" {
             - 1.1.1.1
       search_domains:
         - vanderloch.com
+      # MagicDNS local records — tailscaled answers these itself (100.100.100.100),
+      # so tailnet-only names resolve even when Pi-hole is unreachable over the
+      # tunnel (phones on cellular: 2026-11-23 roam/ntfy/mattermost "offline").
+      # MIRROR of pihole_local_dns in terraform/platform/variables.tf — keep in
+      # sync when adding hosts there. Pi-hole stays authoritative for names not
+      # listed here (and for LAN clients, which never query these).
+      extra_records:
+        - { name: "pihole.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "pelican.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "traefik.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "homepage.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "jackett.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "wyze.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "pterodactyl.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "headscaleconsole.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "kubero.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "registry.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "registry.kubero.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "n8n.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "ha.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "firecrawl.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "headscale.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "roam.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "ntfy.vanderloch.com", type: A, value: "192.168.10.170" }
+        - { name: "mattermost.vanderloch.com", type: A, value: "192.168.10.170" }
 
     database:
       type: sqlite3
