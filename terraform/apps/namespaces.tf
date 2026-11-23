@@ -156,3 +156,12 @@ resource "kubernetes_namespace_v1" "ntfy" {
     ignore_changes = [metadata[0].annotations]
   }
 }
+
+resource "kubernetes_namespace_v1" "mattermost" {
+  metadata {
+    name = "mattermost"
+  }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+}
