@@ -151,6 +151,44 @@ resource "kubernetes_deployment_v1" "api_dev" {
               }
             }
           }
+          # Garage S3 object storage (quickticket-garage-dev); keys live in
+          # quickticket-secret-dev alongside the OpenID secrets
+          env {
+            name = "BACKEND__S3__URL"
+            value_from {
+              secret_key_ref {
+                name = "quickticket-secret-dev"
+                key  = "BACKEND__S3__URL"
+              }
+            }
+          }
+          env {
+            name = "BACKEND__S3__REGION"
+            value_from {
+              secret_key_ref {
+                name = "quickticket-secret-dev"
+                key  = "BACKEND__S3__REGION"
+              }
+            }
+          }
+          env {
+            name = "BACKEND__S3__ACCESS_KEY"
+            value_from {
+              secret_key_ref {
+                name = "quickticket-secret-dev"
+                key  = "BACKEND__S3__ACCESS_KEY"
+              }
+            }
+          }
+          env {
+            name = "BACKEND__S3__SECRET_KEY"
+            value_from {
+              secret_key_ref {
+                name = "quickticket-secret-dev"
+                key  = "BACKEND__S3__SECRET_KEY"
+              }
+            }
+          }
           env {
             name  = "FORCE_COLOR"
             value = "1"
