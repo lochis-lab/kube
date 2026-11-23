@@ -38,6 +38,7 @@ variable "pihole_local_dns" {
     # Endpoints IP instead. Upstream IP = Pi-hole DHCP reservation.)
     "192.168.10.170 roam.vanderloch.com",
     "192.168.10.170 ntfy.vanderloch.com",
+    "192.168.10.170 mattermost.vanderloch.com",
   ]
 }
 

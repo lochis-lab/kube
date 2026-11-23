@@ -111,3 +111,9 @@ module "ntfy" {
   source    = "./modules/ntfy"
   namespace = kubernetes_namespace_v1.ntfy.metadata[0].name
 }
+
+# mattermost — tailnet-only automation HQ / chat (see modules/mattermost/main.tf header)
+module "mattermost" {
+  source    = "./modules/mattermost"
+  namespace = kubernetes_namespace_v1.mattermost.metadata[0].name
+}
