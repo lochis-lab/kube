@@ -174,6 +174,13 @@ resource "kubernetes_deployment_v1" "mattermost" {
             name  = "MM_CONFIG"
             value = "/mattermost/data/config.json"
           }
+          env {
+            # gmail-digest interactive buttons: click callbacks go to the
+            # cleanup hook on happy-agent-01's tailscale IP — an internal
+            # connection, which Mattermost refuses to call unless whitelisted.
+            name  = "MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS"
+            value = "100.64.0.0/10,127.0.0.1"
+          }
           readiness_probe {
             http_get {
               path = "/api/v4/system/ping"
