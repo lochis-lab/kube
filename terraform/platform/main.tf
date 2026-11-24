@@ -236,7 +236,7 @@ resource "helm_release" "traefik" {
   namespace  = "traefik"
   repository = "https://helm.traefik.io/traefik"
   chart      = "traefik"
-  version    = "42.4.0"
+  version    = "42.4.3"
 
   values = [yamlencode({
     additionalArguments = [
