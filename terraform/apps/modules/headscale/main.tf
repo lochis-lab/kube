@@ -43,7 +43,7 @@ resource "kubernetes_deployment_v1" "headscale" {
         enable_service_links            = false
         container {
           name              = "headscale"
-          image             = "headscale/headscale:v0.29.7"
+          image             = "headscale/headscale:v0.29.8"
           command           = ["headscale"]
           args              = ["serve"]
           image_pull_policy = "IfNotPresent"
